@@ -1,0 +1,25 @@
+# virtualenv files
+bin/
+include/
+lib/
+etc/
+share/
+.Python
+pyvenv.cfg
+lib64
+
+# System files
+*.DS_Store
+
+# Cache folders
+**/__pycache__/
+**/*cache*
+**/.ipynb_checkpoints/
+**/*.pyc
+
+# C++
+*.slo
+*.lo
+*.o
+*.obj
+*.out
