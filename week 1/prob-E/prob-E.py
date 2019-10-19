@@ -5,7 +5,6 @@ Week 1 - Problem E
 import sys
 from enum import Enum
 
-
 operations = {
     'plus': lambda x, y: x + y,
     'minus': lambda x, y: x - y,
