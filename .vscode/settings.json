@@ -43,6 +43,7 @@
         "numeric": "cpp",
         "optional": "cpp",
         "tuple": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "unordered_set": "cpp"
     }
 }
