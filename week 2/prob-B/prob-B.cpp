@@ -27,18 +27,41 @@ public:
     }
 
     string solve() {
-        double p_guess = 0.5;
-        double learning_rate = 0.5;
+        return to_string(gradient_descent());
+    }
 
-        double payoff, error;
+    static double cross_entropy_loss(double yHat, double y) {
+        if (y == 1)
+            return -log(yHat);
+        else
+            return -log(1 - yHat);
+    }
+
+    static double sigmoid(double x) {
+        return 1 / (1 + exp(-x));
+    }
+
+    /**
+     * Optimize p_guess through gradient descent of the error function
+     * Error = payoff_with_current_guess - cost_to_draw
+     * @return estimate of p_guess
+     */
+    double gradient_descent(double p_start=0.5, double gamma=0.1) {
+        double current_p, next_p = p_start;
+        double loss, payoff;
+
         do {
-            payoff = payoff_for_p(p_guess);
-            error = cost_to_draw - payoff;
-            p_guess += error * learning_rate;
-//            learning_rate = learning_rate < 0.01 ? learning_rate : 0.9 * learning_rate; // decay learning-rate
-        } while (abs(payoff) > MAX_ERROR);
+            current_p = next_p;
+            payoff = payoff_for_p(current_p);
+//            loss = cross_entropy_loss(payoff, cost_to_draw);
+            loss = 2 * (sigmoid(payoff - cost_to_draw) - 0.5);
+            next_p = current_p - gamma * loss;
 
-        return to_string(p_guess);
+            // decay learning_rate
+            gamma = gamma < 0.01 ? 0.01 : gamma * 0.9;
+        } while (abs(next_p - current_p) > MAX_ERROR);
+
+        return next_p;
     }
 
     double payoff_for_p(double p_guess) {
