@@ -48,7 +48,7 @@ public:
 
             // decay learning_rate
             gamma = gamma < 0.01 ? 0.01 : gamma * 0.9;
-        } while (abs(next_p - current_p) > MAX_ERROR * 10e-4l);
+        } while (abs(next_p - current_p) > MAX_ERROR * 10e-8l);
 
         return next_p;
     }
