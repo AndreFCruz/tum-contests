@@ -2,8 +2,8 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
-#include <string>
 #include <cmath>
+#include <iomanip>
 
 #define MAX_ERROR   10e-6l
 
@@ -24,17 +24,6 @@ public:
             in >> tmp;
             prizes.push_back(tmp);
         }
-    }
-
-    string solve() {
-        return to_string(gradient_descent());
-    }
-
-    static double cross_entropy_loss(double yHat, double y) {
-        if (y == 1)
-            return -log(yHat);
-        else
-            return -log(1 - yHat);
     }
 
     static double sigmoid(double x) {
@@ -59,7 +48,7 @@ public:
 
             // decay learning_rate
             gamma = gamma < 0.01 ? 0.01 : gamma * 0.9;
-        } while (abs(next_p - current_p) > MAX_ERROR);
+        } while (abs(next_p - current_p) > MAX_ERROR * 10e-4l);
 
         return next_p;
     }
@@ -79,7 +68,7 @@ int main() {
     int num_cases;
     cin >> num_cases;
     for (int i = 0; i < num_cases; ++i)
-        cout << "Case #" << i + 1 << ": " << TestCase(cin).solve() << endl;
+        cout << "Case #" << i + 1 << ": " << setprecision(10) << TestCase(cin).gradient_descent() << endl;
 
     return EXIT_SUCCESS;
 }
