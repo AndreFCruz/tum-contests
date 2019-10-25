@@ -2,7 +2,6 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
-#include <set>
 #include <unordered_set>
 #include <string>
 
@@ -36,98 +35,43 @@ public:
      *  it reaches a root element, whose parent is itself (this is the
      *  representative element of the set).
      */
-     int find(int x) {
-         if (parent[x] != x)
-             parent[x] = find(parent[x]);
-         return parent[x];
-     }
-//    int find(int a) {
-//
-//        // Find root
-//        int root = a;
-//        while (parent[root] != root) {
-//            root = parent[root];
-//            assert(parent[root] < parent.size());
-//        }
-//
-//        // NOTE Second Try
-////        int root = a, p;
-////        while (true) {
-////            p = parent[root];
-////            if (p == root)
-////                break;
-////            root = p;
-////        }
-//
-//        // Compress path
-//        int current = a, next_elem;
-//        while (current != root) {
-//            next_elem = parent[current];
-//            parent[current] = root;
-//            current = next_elem;
-//            assert(parent[current] < parent.size());
-//        }
-//
-//        return root;
-//
-////        if (parent[a] != a)
-////            parent[a] = find(parent[a]);
-////        return parent[a];
-//    }
+    int find(int a) {
+        // Find root
+        int root = a;
+        while (parent[root] != root)
+            root = parent[root];
+
+        // Compress path
+        int current = a, next_elem;
+        while (current != root) {
+            next_elem = parent[current];
+            parent[current] = root;
+            current = next_elem;
+        }
+
+        return root;
+    }
 
     /**
      * Uses find to determine the roots of a and b, and combines roots if they are distinct.
      * (attach root of smaller set to root of the larger set; if done without taking size
      * into account the tree can degenerate to O(n) height/depth).
      */
-     void union_join(int x, int y) {
-        int xroot = find(x);
-        int yroot = find(y);
+    int union_join(int a, int b) {
+        a = find(a);
+        b = find(b);
+        if (a == b) // a and b are already merged
+            return a;
 
-        if (size[xroot] < size[yroot])
-            parent[xroot] = yroot;
-        else if (size[xroot] > size[yroot])
-            parent[yroot] = xroot;
-        else {
-            parent[yroot] = xroot;
-            size[xroot] += 1;
-        }
+        // Weighted union: update smaller component
+        int a_size = size[a], b_size = size[b];
+        if (a_size < b_size)
+            swap(a, b);
 
-//        if(x != y) {
-//            if(uf[x] < uf[y]) {
-//                uf[x] += uf[y];
-//                uf[y] = x;
-//            }
-//            else {
-//                uf[y] += uf[x];
-//                uf[x] = y;
-//            }
-//        }
-     }
-//    int union_join(int a, int b) {
-//        a = find(a);
-//        b = find(b);
-//        if (a == b) // a and b are already merged
-//            return a;
-//
-//        // Weighted union: update smaller component
-//        int a_size = size[a], b_size = size[b];
-//        if (a_size < b_size)
-//            swap(a, b);
-//
-//        parent[b] = a;
-//        // Update size accordingly
-//        size[a] = a_size + b_size;
-//        assert(parent[a] < parent.size() and parent[b] < parent.size());
-//        return a;
-//    }
-
-    /**
-     * Compress paths from each node to its parent.
-     */
-    void compress_paths() {
-        for (size_t i = 0; i < parent.size(); ++i)
-            parent[i] = find(i);
+        parent[b] = a;
+        // Update size accordingly
+        size[a] = a_size + b_size;
+        return a;
     }
 
 };
