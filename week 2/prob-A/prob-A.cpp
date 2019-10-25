@@ -19,19 +19,16 @@ private:
     vector<int> parent;
     vector<int> size;
 
-    vector<int> uf;
-
 public:
     UnionFind(size_t n) : n(n) {
         this->size = vector<int>(n, 1);
         this->parent = vector<int>(n);
 
-        generate(parent.begin(), parent.end(), []() {
-            static int i = 0;
+        int i = 0;
+        generate(parent.begin(), parent.end(), [&]() {
             return i++;
         });
 
-        this->uf = vector<int>(n, -1);
     }
 
     /**
@@ -40,23 +37,11 @@ public:
      *  representative element of the set).
      */
      int find(int x) {
-        int r = x;
-
-        /* Find root */
-        while(uf[r] >= 0)
-            r = uf[r];
-
-        /* Compress path to root */
-        while(uf[x] >= 0) {
-            int tmp = uf[x];
-            uf[x] = r;
-            x = tmp;
-        }
-
-        return r;
+         if (parent[x] != x)
+             parent[x] = find(parent[x]);
+         return parent[x];
      }
 //    int find(int a) {
-//        cout << "Called find with a: " << a << endl;
 //
 //        // Find root
 //        int root = a;
@@ -96,19 +81,28 @@ public:
      * into account the tree can degenerate to O(n) height/depth).
      */
      void union_join(int x, int y) {
-        x = find(x);
-        y = find(y);
+        int xroot = find(x);
+        int yroot = find(y);
 
-        if(x != y) {
-            if(uf[x] < uf[y]) {
-                uf[x] += uf[y];
-                uf[y] = x;
-            }
-            else {
-                uf[y] += uf[x];
-                uf[x] = y;
-            }
+        if (size[xroot] < size[yroot])
+            parent[xroot] = yroot;
+        else if (size[xroot] > size[yroot])
+            parent[yroot] = xroot;
+        else {
+            parent[yroot] = xroot;
+            size[xroot] += 1;
         }
+
+//        if(x != y) {
+//            if(uf[x] < uf[y]) {
+//                uf[x] += uf[y];
+//                uf[y] = x;
+//            }
+//            else {
+//                uf[y] += uf[x];
+//                uf[x] = y;
+//            }
+//        }
      }
 //    int union_join(int a, int b) {
 //        a = find(a);
@@ -200,7 +194,8 @@ public:
         }
 
         vector<int> choices(people.size());
-        generate(choices.begin(), choices.end(), []() {static int i = 0; return i++;});
+        int i = 0;
+        generate(choices.begin(), choices.end(), [&]() {return i++;});
 
         int jakob_idx = people.size() - 1;
         // Remove if belongs to the same set as Jakob, or if married
