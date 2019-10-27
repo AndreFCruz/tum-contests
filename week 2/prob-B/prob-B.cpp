@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iomanip>
 
-#define MAX_ERROR   10e-6l
+#define MAX_ERROR   1e-6l
 
 using namespace std;
 
@@ -55,7 +55,7 @@ public:
 
             // decay learning_rate
             gamma = gamma < min_gamma ? min_gamma : gamma * decay;
-        } while (abs(next_p - current_p) > MAX_ERROR * 10e-5l);
+        } while (abs(next_p - current_p) > MAX_ERROR * 1e-2l);
 
         return next_p;
     }
@@ -76,7 +76,7 @@ public:
             else if (payoff < cost_to_draw)
                 left = mid;
             else return mid;
-        } while(right - left > MAX_ERROR * 10e-2l);
+        } while(right - left > MAX_ERROR);
 
         return (left + right) / 2;
     }

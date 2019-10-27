@@ -3,16 +3,25 @@
 #include <algorithm>
 #include <cmath>
 #include <cassert>
+#include <iomanip>
 
 using namespace std;
 
-#define MAX_ERROR   10e-4l
+#define MAX_ERROR   1e-5l
 
 class TestCase {
 public:
     int length;
     int num_posts;
     int canyon_start, canyon_end;
+
+    /**
+     * a > b ?
+     */
+    static bool greater_than(double a, double b) {
+        double error = MAX_ERROR * MAX_ERROR;
+        return (a - b) > error;
+    }
 
     TestCase(istream & in) {
         in >> length >> num_posts >> canyon_start >> canyon_end;
@@ -30,12 +39,11 @@ public:
 
         // Next post position after canyon
         double next_pos = max((double) canyon_end, min_pole_dist * before);
+        if (next_pos > length) return before >= num_posts;
 
         // How many posts fit after canyon ?
         int after = 1 + ((length - next_pos) / min_pole_dist);
-
-        if (next_pos > length) return before >= num_posts;
-        else return before + after >= num_posts;
+        return before + after >= num_posts;
     }
 
     /**
@@ -67,7 +75,7 @@ public:
 
     double solve() {
         double low = 0, high = length / (num_posts - 1.), mid;
-        while (high - low > MAX_ERROR * 10e-2l) {
+        while (high - low > MAX_ERROR) {
             mid = (high + low) / 2;
             if (is_valid(mid))
                 low = mid;
@@ -75,7 +83,8 @@ public:
                 high = mid;
         }
 
-        return (high + low) / 2;
+        return high;
+//        return (high + low) / 2;
     }
 };
 
@@ -83,7 +92,8 @@ int main() {
     int num_cases;
     cin >> num_cases;
     for (int i = 0; i < num_cases; ++i)
-        cout << "Case #" << i + 1 << ": " << TestCase(cin).solve() << endl;
+        cout << "Case #" << i + 1 << ": " << setprecision(10)
+             << TestCase(cin).solve() << endl;
 
     return EXIT_SUCCESS;
 }
