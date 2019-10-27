@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define MAX_ERROR   10e-4
+#define MAX_ERROR   10e-4l
 
 class TestCase {
 public:
@@ -24,16 +24,33 @@ public:
      * @param min_pole_dist minimum distance between poles in this configuration.
      * @return whether this configuration is valid.
      */
-    bool is_valid(float min_pole_dist) {
-        float dist = 0;
+    bool is_valid(double min_pole_dist) {
+        // How many posts fit before canyon ?
+        int before = 1 + (canyon_start / min_pole_dist);
+
+        // Next post position after canyon
+        double next_pos = max((double) canyon_end, min_pole_dist * before);
+
+        // How many posts fit after canyon ?
+        int after = 1 + ((length - next_pos) / min_pole_dist);
+
+        if (next_pos > length) return before >= num_posts;
+        else return before + after >= num_posts;
+    }
+
+    /**
+     * Same result as is_valid(double), but with slightly different algorithm.
+     */
+    bool is_valid_old(double min_pole_dist) {
+        double dist = 0;
         int poles = 1;  // a pole always goes at position x=0
         bool after_canyon = false;
         while (dist <= length and poles < num_posts) {
-            float new_dist;
+            double new_dist;
             if (dist + min_pole_dist <= canyon_start) {
                 new_dist = dist + min_pole_dist;
             } else if (! after_canyon) {
-                new_dist = max((float) canyon_end, dist + min_pole_dist);
+                new_dist = max((double) canyon_end, dist + min_pole_dist);
                 after_canyon = true;
             } else if (dist + min_pole_dist <= length) {
                 new_dist = dist + min_pole_dist;
@@ -48,9 +65,9 @@ public:
         return poles >= num_posts;
     }
 
-    float solve() {
-        float low = 0, high = length / (num_posts - 1.), mid;
-        while (high - low > MAX_ERROR * 10e-2) {
+    double solve() {
+        double low = 0, high = length / (num_posts - 1.), mid;
+        while (high - low > MAX_ERROR * 10e-2l) {
             mid = (high + low) / 2;
             if (is_valid(mid))
                 low = mid;
