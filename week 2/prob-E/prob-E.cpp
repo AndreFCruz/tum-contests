@@ -5,6 +5,7 @@
 #include <cassert>
 #include <map>
 #include <unordered_set>
+#include <exception>
 
 using namespace std;
 
@@ -82,21 +83,6 @@ public:
     bool connected(int a, int b) {
         return find(a) == find(b);
     }
-
-//    /**
-//     * Returns all members of the graph/group containing the given idx;
-//     */
-//    vector<int> group_containing(int idx) {
-//        vector<int> group;
-//        int idx_parent = find(idx);
-//        for (int i = 0; i < parent.size(); ++i) {
-//            if (parent[i] == idx_parent)
-//                group.push_back(i);
-//        }
-//
-//        assert(group.size() == size[idx]);
-//        return group;
-//    }
 };
 
 class TestCase {
@@ -106,137 +92,74 @@ class TestCase {
     int n_countries;
     int n_interactions;
 
-    multimap<int, int> friendship;
-    multimap<int, int> antipathy;
-
     UnionFind * uf = nullptr;
+    vector<int> antipathy;
 
 public:
+
     TestCase(istream & in) {
         char relation;
         int c1, c2;
         in >> n_countries >> n_interactions;
+
+        this->uf = new UnionFind(n_countries + 1);
+        this->antipathy = vector<int>(n_countries + 1, 0);
+
         for (int i = 0; i < n_interactions; ++i) {
             in >> relation >> c1 >> c2;
 
-            if (relation == ANTIPATHY) {
-                // Antipathy is mutual
-                antipathy.insert(make_pair(c1, c2));
-                antipathy.insert(make_pair(c2, c1));
-            } else if (relation == FRIENDSHIP) {
-                // Friendship is mutual
-                friendship.insert(make_pair(c1, c2));
-                friendship.insert(make_pair(c2, c1));
-            }
+            // Identify all countries by their parent's id
+            // (so when new friends/enemies are added they ripple out to the whole group)
+            int c1_parent = uf->find(c1), c2_parent = uf->find(c2);
+            if (relation == FRIENDSHIP) {
+                uf->union_join(c1_parent, c2_parent);
+                if (antipathy[c1_parent] == 0 and antipathy[c2_parent] == 0)
+                    ; // Nothing to do
+                else if (antipathy[c1_parent] != 0 and antipathy[c2_parent] == 0)
+                    antipathy[c2_parent] = antipathy[c1_parent];
+                else if (antipathy[c1_parent] == 0 and antipathy[c2_parent] != 0)
+                    antipathy[c1_parent] = antipathy[c2_parent];
+                else
+                    uf->union_join(antipathy[c1_parent], antipathy[c2_parent]);
+
+            } else if (relation == ANTIPATHY) {
+                if (antipathy[c1_parent] == 0 and antipathy[c2_parent] == 0) {
+                    // Both still don't hate anyone
+                    antipathy[c1_parent] = c2_parent;
+                    antipathy[c2_parent] = c1_parent;
+                }
+                else if (antipathy[c1_parent] != 0 and antipathy[c2_parent] == 0) {
+                    // c1's group hates someone and c2's group doesn't, join c1's enemies with c2's group
+                    uf->union_join(antipathy[c1_parent], c2_parent);
+                    antipathy[c2_parent] = c1_parent;
+                }
+                else if (antipathy[c1_parent] == 0 and antipathy[c2_parent] != 0) {
+                    // reverse of previous condition
+                    uf->union_join(antipathy[c2_parent], c1_parent);
+                    antipathy[c1_parent] = c2_parent;
+                }
+                else {
+                    // Both already hate someone
+                    uf->union_join(c1_parent, antipathy[c2_parent]); // c1 is now friends with c2's enemies
+                    uf->union_join(c2_parent, antipathy[c1_parent]); // c2 is now friends with c1's enemies
+                }
+
+            } else
+                throw(invalid_argument("Relation must be one of {F, A}"));
+
         }
 
-        uf = make_union_find();
-    }
-
-    UnionFind * make_union_find() {
-        auto union_find = new UnionFind(n_countries);
-
-        size_t prev_alliances, curr_alliances = get_num_alliances(*union_find);
-        do {
-            prev_alliances = curr_alliances;
-
-            // Friendship and hatred relations
-            apply_friends_of_friends(*union_find);
-
-            // Apply "a common cause unites people"
-            apply_common_cause(*union_find);
-
-            // Apply "an alliance has common enemies"
-            apply_common_enemies(*union_find);
-
-            curr_alliances = get_num_alliances(*union_find);
-        } while (prev_alliances != curr_alliances);
-
-        return union_find;
-    }
-
-    /**
-     * Applies rule "friends of my friends are my friends as well",
-     * by connecting all friends in a graph.
-     */
-    void apply_friends_of_friends(UnionFind & uf) {
-        for (auto p1 : friendship) {
-            int country1 = p1.first;
-            int country2 = p1.second;
-
-            uf.union_join(country1 - 1, country2 - 1);
-        }
-    }
-
-    /**
-     * Applies rule "a common cause unites people".
-     * If x hates z and y hates z, then x and y form an alliance.
-     */
-    void apply_common_cause(UnionFind & uf) {
-        unordered_set<int> visited; // HashSet
-        for (auto p1 : antipathy) {
-            int hatee = p1.first;
-            if (visited.count(hatee) > 0)
-                continue;
-
-            visited.insert(hatee);
-            // Get everyone that hates p1 (equal to everyone that p1 hates)
-            auto lb = antipathy.lower_bound(hatee), ub = antipathy.upper_bound(hatee);
-            int c1, c2;
-            while (lb != ub and lb != antipathy.end()) {
-                assert(lb->first == hatee); // hatee is the common key
-                c1 = lb->second;
-                ++lb;
-                if (not (lb != ub and lb != antipathy.end()))
-                    break;
-                c2 = lb->second;
-                uf.union_join(c1 - 1, c2 - 1);
-            }
-        }
-    }
-
-    /**
-     * Applies rule "an alliance has common enemies".
-     */
-    void apply_common_enemies(UnionFind & uf) {
-        map<int, vector<int>> alliances;
-        for (int i = 0; i < n_countries; ++i)
-            alliances[uf.find(i)].push_back(i);
-
-        for (const auto & p : alliances) {
-            vector<int> hated;
-            // Get all hated by all countries in this alliance
-            for (int ally : p.second) {
-                // Get everyone that ally hates
-                auto lb = antipathy.lower_bound(ally), ub = antipathy.upper_bound(ally);
-                for (; lb != ub and lb != antipathy.end(); ++lb)
-                    hated.push_back(lb->second);
-            }
-
-            // Add antipathy between all alliance members and all hated
-            for (int ally : p.second) {
-                for (int hatee : hated)
-                    antipathy.insert(make_pair(ally, hatee));
-            }
-        }
-    }
-
-    size_t get_num_alliances(UnionFind & uf) {
-        unordered_set<int> parents;
-        for (int i = 0; i < n_countries; ++i)
-            parents.insert(uf.find(i));
-
-        return parents.size();
     }
 
     string solve() {
-        // Check size of alliance containing country with id 1 (index 0)
-        return uf->size_of(0) > (n_countries / 2) ? "yes" : "no";
+        // Check size of alliance containing country with id 1
+        return uf->size_of(uf->find(1)) > (n_countries / 2) ? "yes" : "no";
     }
 
     ~TestCase() {
-        if (uf != nullptr) delete uf;
+        delete this->uf;
     }
+
 };
 
 int main() {
