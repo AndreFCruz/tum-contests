@@ -15,14 +15,6 @@ public:
     int num_posts;
     int canyon_start, canyon_end;
 
-    /**
-     * a > b ?
-     */
-    static bool greater_than(double a, double b) {
-        double error = MAX_ERROR * MAX_ERROR;
-        return (a - b) > error;
-    }
-
     TestCase(istream & in) {
         in >> length >> num_posts >> canyon_start >> canyon_end;
     }

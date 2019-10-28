@@ -79,6 +79,10 @@ public:
         return size[idx];
     }
 
+    bool connected(int a, int b) {
+        return find(a) == find(b);
+    }
+
 //    /**
 //     * Returns all members of the graph/group containing the given idx;
 //     */
@@ -132,14 +136,21 @@ public:
     UnionFind * make_union_find() {
         auto union_find = new UnionFind(n_countries);
 
-        // Friendship and hatred relations
-        apply_friends_of_friends(*union_find);
+        size_t prev_alliances, curr_alliances = get_num_alliances(*union_find);
+        do {
+            prev_alliances = curr_alliances;
 
-        // Apply "a common cause unites people"
-        apply_common_cause(*union_find);
+            // Friendship and hatred relations
+            apply_friends_of_friends(*union_find);
 
-        // Apply "an alliance has common enemies"
-        apply_common_enemies(*union_find);
+            // Apply "a common cause unites people"
+            apply_common_cause(*union_find);
+
+            // Apply "an alliance has common enemies"
+            apply_common_enemies(*union_find);
+
+            curr_alliances = get_num_alliances(*union_find);
+        } while (prev_alliances != curr_alliances);
 
         return union_find;
     }
@@ -192,8 +203,30 @@ public:
         for (int i = 0; i < n_countries; ++i)
             alliances[uf.find(i)].push_back(i);
 
-//        for ()
+        for (const auto & p : alliances) {
+            vector<int> hated;
+            // Get all hated by all countries in this alliance
+            for (int ally : p.second) {
+                // Get everyone that ally hates
+                auto lb = antipathy.lower_bound(ally), ub = antipathy.upper_bound(ally);
+                for (; lb != ub and lb != antipathy.end(); ++lb)
+                    hated.push_back(lb->second);
+            }
 
+            // Add antipathy between all alliance members and all hated
+            for (int ally : p.second) {
+                for (int hatee : hated)
+                    antipathy.insert(make_pair(ally, hatee));
+            }
+        }
+    }
+
+    size_t get_num_alliances(UnionFind & uf) {
+        unordered_set<int> parents;
+        for (int i = 0; i < n_countries; ++i)
+            parents.insert(uf.find(i));
+
+        return parents.size();
     }
 
     string solve() {
@@ -207,6 +240,8 @@ public:
 };
 
 int main() {
+    std::ios_base::sync_with_stdio(false); // for better performance
+
     int num_cases;
     cin >> num_cases;
     for (int i = 0; i < num_cases; ++i)
