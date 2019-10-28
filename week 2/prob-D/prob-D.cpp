@@ -52,7 +52,7 @@ public:
 
     void solve() {
         // Friends sorted by their line numbers
-        map<int, int> lines_friends;  // inverse relation from friends_lines (this maps lines to friends)
+        multimap<int, int> lines_friends;  // inverse relation from friends_lines (this maps lines to friends)
         for (size_t i = 0; i < friends_lines.size(); ++i)
             lines_friends.insert(make_pair(friends_lines[i], i));
 
