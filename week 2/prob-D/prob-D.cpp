@@ -16,7 +16,7 @@ struct Station {
 };
 
 struct StationIdCmp {
-    bool operator()(const Station& s1, const Station& s2) { return s1.id < s2.id; };
+    bool operator()(const Station& s1, const Station& s2) const { return s1.id < s2.id; };
 };
 
 class TestCase {
@@ -54,25 +54,54 @@ public:
         // Friends sorted by their line numbers
         map<int, int> lines_friends;  // inverse relation from friends_lines (this maps lines to friends)
         for (size_t i = 0; i < friends_lines.size(); ++i)
-            lines_friends[friends_lines[i]] = i;
+            lines_friends.insert(make_pair(friends_lines[i], i));
 
         auto begin_it = lines_friends.begin(), end_it = lines_friends.end();
         int current_line = 1, current_room = stations[0].u;
         set<Station, StationIdCmp> active_stations;
         // Populate active_stations
-        for (size_t i = 0; i < stations.size(); ++i) {
-            if (stations[i].u == stations[0].u)
-                active_stations.insert(stations[i]);
+        auto next_station = stations.begin();
+        while (next_station->u == stations[0].u) {
+            active_stations.insert(*next_station);
+            ++next_station;
         }
 
+        auto station_it = active_stations.begin();
         while (begin_it != end_it) {
-            int line = begin_it->first, f_idx = begin_it->second;
+            int f_line = begin_it->first, f_idx = begin_it->second;
 
             // Advance lines until this friend's line is reached, then record room number
-            for (auto it = active_stations.begin(); it != active_stations.end(); ++it) {
+            while (f_line > current_line) {
+                current_line += 1;
+                ++station_it;
 
+                if (station_it == active_stations.end()) {
+                    // Progress to next room, and check which stations are now active
+                    current_room += 1;
+
+                    // Delete stations ending on this room
+                    for (auto it = active_stations.begin(); it != active_stations.end(); ) {
+                        if (it->v < current_room)
+                            it = active_stations.erase(it);
+                        else ++it;
+                    }
+
+                    // If no active stations, get next room
+                    if (active_stations.empty())
+                        current_room = next_station->u;
+
+                    // Fetch stations that are starting at room current_room
+                    while (next_station->u == current_room) {
+                        active_stations.insert(*next_station);
+                        ++next_station;
+                    }
+
+                    station_it = active_stations.begin();
+                }
             }
 
+            friends_rooms[f_idx] = current_room;
+            ++begin_it;
         }
     }
 
