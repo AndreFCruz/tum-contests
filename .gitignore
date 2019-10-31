@@ -24,3 +24,5 @@ lib64
 *.obj
 *.out
 *.dSYM
+**/cmake-build-debug
+CMakeLists.txt
