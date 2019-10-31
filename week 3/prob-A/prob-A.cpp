@@ -75,16 +75,14 @@ struct Graph {
     explicit Graph(istream& in) {
         in >> num_vertices;
 
-        edges.reserve(num_vertices * (num_vertices - 1));
+        // Undirected graph
+        edges.reserve((num_vertices * (num_vertices - 1)) / 2);
         int weight;
         for (int row = 0; row < num_vertices; ++row) {
             for (int col = 0; col < num_vertices; ++col) {
                 in >> weight;
-                if (row == col) {
-                    assert(weight == 0); continue;
-                } else {
+                if (col > row)
                     edges.emplace_back(row, col, weight);
-                }
             }
         }
     };
