@@ -88,18 +88,18 @@ public:
         for (uint i = 0; i < n_undirected; ++i) {
             in >> n1 >> n2;
             // undirected road from intersection n1 to intersection n2
-            edges.insert(make_pair(n1, n2));
-            edges.insert(make_pair(n2, n1));
-
             if (n1 > n2) swap(n1, n2);
             two_way_roads.insert(make_pair(n1, n2));
         }
 
-        assert(edges.size() == n_directed + n_undirected);
+        assert(edges.size() == n_directed);
+        assert(two_way_roads.size() == n_undirected);
     }
 
     string solve() const {
-        // TODO
+        auto topo_sort = topological_sort(edges, n_vertices); // TODO catch exception
+
+        return "TODO";
     }
 };
 
