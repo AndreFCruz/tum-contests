@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <map>
 #include <unordered_set>
+#include <stack>
 
 using namespace std;
 
@@ -95,9 +96,42 @@ public:
         }
     }
 
-    string solve() {
-        auto topo_sort = topological_sort(this->dependencies, this->n_packages);
-        // TODO
+    /**
+     * Checks whether there is a conflict when removing/maintaining the respective nodes.
+     * Searches the graph starting from all nodes to be kept, if any node to be removed is
+     *  reached through dependency relations, then there is a conflict.
+     * @return whether there's a conflict on this operation.
+     */
+    bool check_conflict() const {
+        stack<uint> s;
+        for (uint n : to_keep)
+            s.push(n);
+
+        unordered_set<uint> to_remove;
+        for (uint n : this->to_remove)
+            to_remove.insert(n);
+
+        unordered_set<uint> visited;
+        while (! s.empty()) {
+            uint node = s.top(); s.pop();
+            // If node is marked to be removed, conflict was found
+            if (to_remove.count(node) > 0)
+                return true;
+
+            // If node was not visited
+            if (visited.count(node) == 0) {
+                visited.insert(node);
+                // Visit all of this node's dependencies
+                for (auto it = dependencies.equal_range(node); it.first != it.second; ++it.first)
+                    s.push(it.first->second);
+            }
+        }
+
+        return false;
+    }
+
+    string solve() const {
+        return this->check_conflict() ? "conflict" : "ok";
     }
 };
 
