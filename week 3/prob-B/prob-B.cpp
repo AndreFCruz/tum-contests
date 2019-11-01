@@ -17,11 +17,11 @@ vector<uint> topological_sort(multimap<uint, uint> dependencies, uint n_vertices
     for (uint i = 1; i <= n_vertices; ++i)
         s.insert(i);
 
-    // Save nodes which have no predecessors (no incoming edges)
+    // Save nodes which have no predecessors/dependencies
     for (const auto& p : dependencies)
-        s.erase(p.second);
+        s.erase(p.first);
 
-    // Build reverse dependencies for performance
+    // Build reverse dependencies for faster lookups of nodes
     multimap<uint, uint> r_dependencies;
     for (const auto& p: dependencies)
         r_dependencies.insert(make_pair(p.second, p.first));
@@ -32,26 +32,30 @@ vector<uint> topological_sort(multimap<uint, uint> dependencies, uint n_vertices
         s.erase(node);
         topological_order.push_back(node);
 
-        // Remove node from Graph (remove all outgoing edges)
-        auto it = dependencies.equal_range(node);
+        // Remove node from Graph (all dependencies on this node)
+        //  all dependencies[x, node],      x in nodes
+        //  all r_dependencies[node, x],    x in nodes
+        auto it = r_dependencies.equal_range(node);
         while (it.first != it.second) {
             uint src = it.first->first, dest = it.first->second;
+            assert(src == node);
 
-            // If dest node has no predecessors (no incoming edges), add to set s
-            if (r_dependencies.count(dest) > 0) {
-                s.insert(dest);
-            }
-
-            // Remove reverse dependencies
-            for (auto r_it = r_dependencies.equal_range(dest); r_it.first != r_it.second; ++r_it.first) {
-                // If this is the reverse relation of src->dest (dest->src), delete
-                if (r_it.first->first == it.first->second and r_it.first->second == it.first->first) {
-                    r_dependencies.erase(r_it.first); break;
+            // For all of dest's dependencies, remove the one on node src
+            bool check_deleted = false;
+            for (auto it_pair = dependencies.equal_range(dest); it_pair.first != it_pair.second; ++it_pair.first) {
+                if (it_pair.first->first == dest and it_pair.first->second == src) {
+                    check_deleted = true;
+                    dependencies.erase(it_pair.first); break;
                 }
             }
+            assert(check_deleted);
 
-            // Remove this edge from the graph
-            dependencies.erase(it.first++);
+            // Remove this edge from r_dependencies
+            r_dependencies.erase(it.first++);
+
+            // If dest node has no predecessors (no incoming edges), add to set s
+            if (dependencies.count(dest) == 0)
+                s.insert(dest);
         }
     }
 
