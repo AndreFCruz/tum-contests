@@ -12,7 +12,12 @@ using namespace std;
 
 typedef unsigned int uint;
 
-// TODO Check if a cycle is reached, if so throw an exception
+/**
+ * Returns indices of a topological order
+ * @param dependencies  edges representing dependencies between nodes
+ * @param n_vertices    number of vertices/nodes
+ * @return a vector in which v[node_id - 1] = node_topological_order
+ */
 vector<uint> topological_sort(multimap<uint, uint> dependencies, uint n_vertices) {
     unordered_set<uint> s;
     for (uint i = 1; i <= n_vertices; ++i)
@@ -27,11 +32,12 @@ vector<uint> topological_sort(multimap<uint, uint> dependencies, uint n_vertices
     for (const auto& p: dependencies)
         r_dependencies.insert(make_pair(p.second, p.first));
 
-    vector<uint> topological_order;
+    vector<uint> topological_order(n_vertices);
+    uint counter = 0;
     while (! s.empty()) {
         uint node = *s.begin();
         s.erase(node);
-        topological_order.push_back(node);
+        topological_order[node-1] = ++counter;
 
         // Remove node from Graph (all dependencies on this node)
         //  all dependencies[x, node],      x in nodes
@@ -61,16 +67,22 @@ vector<uint> topological_sort(multimap<uint, uint> dependencies, uint n_vertices
     }
 
     // Dependencies should be empty by now
-    if (! dependencies.empty()) // TODO CHECK
+    if (! dependencies.empty())
         throw domain_error("provided graph is cyclic");
 
     return topological_order;
 }
 
+struct PairHash {
+    int operator()(const pair<uint, uint>& p) const {
+        return p.first * 1000 + p.second;   // 1000 is the max number of nodes
+    }
+};
+
 class TestCase {
     uint n_vertices;    // number of intersections
     multimap<uint, uint> edges;
-    unordered_set<pair<uint, uint>> two_way_roads;
+    unordered_set<pair<uint, uint>, PairHash> two_way_roads;
 
 public:
     explicit TestCase(istream& in) {
@@ -96,10 +108,34 @@ public:
         assert(two_way_roads.size() == n_undirected);
     }
 
-    string solve() const {
-        auto topo_sort = topological_sort(edges, n_vertices); // TODO catch exception
+    string solve() {
+        multimap<uint, uint> inverted_edges;
+        for (const auto& p : edges)
+            inverted_edges.insert(make_pair(p.second, p.first));
 
-        return "TODO";
+        vector<uint> topo_order;
+        try {
+            topo_order = topological_sort(inverted_edges, n_vertices);
+        } catch (domain_error& e) {
+            // Graph is cyclic
+            return "no";
+        }
+
+        vector<pair<uint, uint>> new_edges;
+        for (const auto& road : two_way_roads) {
+            if (topo_order[road.first - 1] < topo_order[road.second - 1]) {
+                new_edges.push_back(make_pair(road.first, road.second));
+            } else {
+                new_edges.push_back(make_pair(road.second, road.first));
+            }
+            edges.insert(new_edges.back());
+            // TODO check if new graph has a cycle ?
+        }
+
+        string answer = "yes";
+        for (auto p : new_edges)
+            answer += "\n" + to_string(p.first) + " " + to_string(p.second);
+        return answer;
     }
 };
 
