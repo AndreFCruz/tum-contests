@@ -51,11 +51,12 @@ public:
 
     string solve() {
 
-        // Start from node 1, and add all available nodes to the queue
         set<uint> nodes;
         nodes.insert(1);    // start node
         uint curr_water_lv = init_water_lv, last_used_water_lv = init_water_lv;
         vector<bool> visited(num_rooms + 1, false);
+
+        // While there are reachable nodes
         while (! nodes.empty()) {
             uint n = *nodes.begin();
             nodes.erase(nodes.begin());
