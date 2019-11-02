@@ -70,13 +70,13 @@ public:
 
             // Access all possible hallways
             auto hallway_it = hallways.begin();
-            while (hallway_it != hallways.end() and hallway_it->water_level > curr_water_lv) {
+            while (hallway_it != hallways.end() and hallway_it->water_level >= curr_water_lv) {
                 bool used = false;
-                if (visited[hallway_it->a] and !visited[hallway_it->b]) {
+                if (visited[hallway_it->a] and !visited[hallway_it->b] and nodes.count(hallway_it->b) == 0) {
                     nodes.insert(hallway_it->b);
                     used = true;
                 }
-                else if (!visited[hallway_it->a] and visited[hallway_it->b]) {
+                else if (!visited[hallway_it->a] and visited[hallway_it->b] and nodes.count(hallway_it->a) == 0) {
                     nodes.insert(hallway_it->a);
                     used = true;
                 }
