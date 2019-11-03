@@ -49,19 +49,18 @@ public:
         }
     }
 
-    string solve() {
+    string solve(uint start_node = 1) {
 
-        set<uint> nodes;
-        nodes.insert(1);    // start node
-        uint curr_water_lv = init_water_lv, last_used_water_lv = init_water_lv;
         vector<bool> visited(num_rooms + 1, false);
+        set<uint> nodes;
+        nodes.insert(start_node);
+        visited[start_node] = true;
+        uint curr_water_lv = init_water_lv, last_used_water_lv = init_water_lv;
 
         // While there are reachable nodes
         while (! nodes.empty()) {
             uint n = *nodes.begin();
             nodes.erase(nodes.begin());
-            if (visited[n]) continue;
-            visited[n] = true;
 
             // If it's a control room, lower water level
             auto it = control_rooms.find(n);
@@ -73,12 +72,14 @@ public:
             auto hallway_it = hallways.begin();
             while (hallway_it != hallways.end() and hallway_it->water_level >= curr_water_lv) {
                 bool used = false;
-                if (visited[hallway_it->a] and !visited[hallway_it->b] and nodes.count(hallway_it->b) == 0) {
+                if (visited[hallway_it->a] and !visited[hallway_it->b]) {
                     nodes.insert(hallway_it->b);
+                    visited[hallway_it->b] = true;
                     used = true;
                 }
-                else if (!visited[hallway_it->a] and visited[hallway_it->b] and nodes.count(hallway_it->a) == 0) {
+                else if (!visited[hallway_it->a] and visited[hallway_it->b]) {
                     nodes.insert(hallway_it->a);
+                    visited[hallway_it->a] = true;
                     used = true;
                 }
                 else if (visited[hallway_it->a] and visited[hallway_it->b]) {
@@ -88,6 +89,7 @@ public:
 
                 // If this hallway was used
                 if (used) {
+//                    cout << "Using hallway <" << hallway_it->a << "; " << hallway_it->b << "> at " << hallway_it->water_level << endl; // TODO delete
                     last_used_water_lv = min(last_used_water_lv, hallway_it->water_level);
                     hallway_it = hallways.erase(hallway_it);
                 } else {
