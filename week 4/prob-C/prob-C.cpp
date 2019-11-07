@@ -84,6 +84,12 @@ public:
         // else: market_dist[n] = market_dist[parent] != inf ? market_dist[parent] + edge.cost : inf
         // regular_dist is updates as normal
 
+        // OR:
+        // "Find the shortest paths from start and destination then add both for every
+        //  supermarket and find the minimum. This way you only use dijkstra twice not
+        //  number of supermarket many times"
+        // (brute-force but there are at most 10000 supermarkets)
+
         return "impossibruu";
     }
 };
