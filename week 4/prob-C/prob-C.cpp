@@ -76,7 +76,13 @@ public:
     }
 
     string solve() {
-
+        // Do Dijkstra shortest-path
+        // maintain 2 distance vectors: one as normal, and another for paths which have gone through a supermarket
+        // on every vertex that has a supermarket, visit it
+        // when comparing distances:
+        // if node has supermarket: market_dist[n] = min(market_dist[n], regular_dist[n] + market.time)
+        // else: market_dist[n] = market_dist[parent] != inf ? market_dist[parent] + edge.cost : inf
+        // regular_dist is updates as normal
 
         return "impossibruu";
     }
