@@ -6,7 +6,6 @@
 #include <queue>
 #include <limits>
 #include <cmath>
-#include <cassert>
 
 using namespace std;
 
@@ -34,13 +33,6 @@ public:
         return logDist + log(newEdgeDist);
     }
 
-    static bool all_reachable(const vector<bool>& visited) {
-        for (uint i = 1; i < visited.size(); ++i) {
-            if (! visited[i]) return false;
-        }
-        return true;
-    }
-
     string solve(uint start_node = 1) {
         // Distances from source node
         vector<double> log_exchange_rate(n_vertices + 1, numeric_limits<double>::max());
@@ -56,7 +48,6 @@ public:
         pqueue.push(make_pair(0, start_node)); // starts at node 1 with distance 0
         log_exchange_rate[start_node] = 0;
 
-        bool jackpot = false; // When a virtuous exchange loop is found
         while (! pqueue.empty()) {
             auto p = pqueue.top(); pqueue.pop();
             uint node = p.second;
@@ -68,10 +59,7 @@ public:
 
                 // !visited[e.dest] and
                 if (log_dist < log_exchange_rate[e.dest]) {
-                    if (visited[e.dest]) {
-                        jackpot = true;
-                        continue;
-                    }
+                    if (visited[e.dest]) return "Jackpot"; // virtuous exchange cycle
                     log_exchange_rate[e.dest] = log_dist;
                     pqueue.push(make_pair(log_dist, e.dest));
                     // NOTE We should delete the previous pair containing this node
@@ -79,12 +67,7 @@ public:
             }
         }
 
-        if (! visited.back())
-            return "impossible";
-        else if (jackpot and all_reachable(visited))
-            return "Jackpot";
-        else
-            return to_string(exp(log_exchange_rate.back()));
+        return visited.back() ? to_string(exp(log_exchange_rate.back())) : "impossible";
     }
 };
 
