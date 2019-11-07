@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <limits>
 #include <cmath>
@@ -10,26 +11,73 @@
 using namespace std;
 
 struct Edge {
-    uint origin, dest;
-    double exchange_rate;
+    uint origin, dest, cost;
+
+    Edge reverse() {
+        Edge reverse;
+        reverse.origin = this->dest;
+        reverse.dest = this->origin;
+        reverse.cost = this->cost;
+        return reverse;
+    }
+};
+
+struct EdgeCmp {
+    bool operator()(const Edge& e1, const Edge& e2) {
+        if (e1.cost != e2.cost) return e1.cost < e2.cost;
+        return e1.dest != e2.dest ? e1.dest < e2.dest : e1.origin < e2.origin;
+    }
 };
 
 class TestCase {
-    uint n_vertices;
-    multimap<uint, Edge> edges;
+    uint n_cities;  // n
+    uint n_roads;   // m
+    uint n_markets; // s
+    uint start_node;    // a
+    uint end_node;      // b
+
+    // Roads between cities
+    multimap<uint, Edge, EdgeCmp> edges;
+
+    // Supermarkets per city, there may be multiple per city but we only care about the fastest
+    unordered_map<uint, uint> markets;   // markets[market_node] = market_time
 
 public:
-    TestCase(istream& in) {
-        uint n_edges;
-        in >> n_vertices >> n_edges;
-        for (uint i = 0; i < n_edges; ++i) {
+    explicit TestCase(istream& in) {
+        in >> n_cities >> n_roads >> n_markets >> start_node >> end_node;
+
+        for (uint i = 0; i < n_roads; ++i) {
             Edge e;
-            in >> e.origin >> e.dest >> e.exchange_rate;
+            in >> e.origin >> e.dest >> e.cost;
+
+            // Two-way roads
             edges.insert(make_pair(e.origin, e));
+            edges.insert(make_pair(e.dest, e.reverse()));
+        }
+
+        uint c, w;
+        for (uint i = 0; i < n_markets; ++i) {
+            in >> c >> w;
+
+            // If there is no market at c, or if market at c is slower
+            if (markets.count(c) == 0 or markets[c] > w)
+                markets[c] = w;
         }
     }
 
+    static string minutes_to_time_format(uint mins) {
+        uint hours = mins / 60;
+        mins -= hours * 60;
+
+        char formatted[6];
+        uint n = sprintf(formatted, "%02u:%02u", hours, mins);
+        formatted[n] = 0;
+        return string(formatted);
+    }
+
     string solve() {
+
+
         return "impossibruu";
     }
 };
