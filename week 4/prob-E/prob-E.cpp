@@ -10,6 +10,14 @@ using namespace std;
 
 struct Edge {
     uint origin, dest, cost;
+
+    Edge reverse() const {
+        Edge reverse;
+        reverse.origin = this->dest;
+        reverse.dest = this->origin;
+        reverse.cost = this->cost;
+        return reverse;
+    }
 };
 
 class TestCase {
@@ -33,6 +41,7 @@ public:
             Edge e;
             in >> e.origin >> e.dest >> e.cost;
             edges.insert(make_pair(e.origin, e));
+            edges.insert(make_pair(e.dest, e.reverse()));
         }
     }
 
