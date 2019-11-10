@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 using namespace std;
 
@@ -35,17 +36,23 @@ public:
     }
 
     // NOTE Assumes graph is a DAG
-    static uint max_path_from(const multimap<uint, uint>& edges, const vector<uint>& costs, uint from_node) {
+    static uint max_path_from(const multimap<uint, uint>& edges, const vector<uint>& costs, uint from_node, unordered_map<uint, uint>& cache) {
         uint cost = 0;
         for (auto it = edges.equal_range(from_node); it.first != it.second; ++it.first) {
-            cost = max(cost, max_path_from(edges, costs, it.first->second));
+            if (cache.count(it.first->second) > 0)
+                cost = max(cost, cache[it.first->second]);
+            else
+                cost = max(cost, max_path_from(edges, costs, it.first->second, cache));
         }
-        return cost + costs[from_node];
+        cost += costs[from_node];
+        cache[from_node] = cost;
+        return cost;
     }
 
     string solve() {
         // Find critical path (longest path) from source node 0 (to any node)
-        uint critical_path_cost = max_path_from(edges, costs, 0);
+        unordered_map<uint, uint> cache;
+        uint critical_path_cost = max_path_from(edges, costs, 0, cache);
         return to_string(critical_path_cost);
     }
 };
