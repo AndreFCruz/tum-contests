@@ -67,7 +67,7 @@ public:
         mins -= hours * 60;
 
         char formatted[6];
-        uint n = sprintf(formatted, "%02u:%02u", hours, mins);
+        uint n = sprintf(formatted, "%01u:%02u", hours, mins);
         formatted[n] = 0;
         return string(formatted);
     }
