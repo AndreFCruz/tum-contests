@@ -76,6 +76,9 @@ public:
      * @return problem's solution
      */
     string solve(uint start_node = 1) {
+        // If only 1 currency exists, then you're already in Column currency and exchange rate is 1
+        if (this->n_vertices == 1) return to_string(1.);
+
         vector<double> log_exchange_rate(this->n_vertices + 1, numeric_limits<double>::max());
         vector<uint> predecessor(this->n_vertices + 1, 0);
 
