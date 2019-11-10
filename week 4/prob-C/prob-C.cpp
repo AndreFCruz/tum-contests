@@ -87,7 +87,7 @@ public:
         // NOTE this would be more efficient with a Fibonacci Heap
         typedef pair<uint, uint> pi;
         priority_queue<pi, vector<pi>, greater<pi>> priorityQueue; // priority queue of elements <distance, node>
-        priorityQueue.push(make_pair(0, start_node)); // starts at node 1 with distance 0
+        priorityQueue.push(make_pair(0, start_node)); // start_node is at distance 0
         dist[start_node] = 0;
         while (! priorityQueue.empty()) {
             auto p = priorityQueue.top(); priorityQueue.pop();
