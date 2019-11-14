@@ -9,13 +9,14 @@
 using namespace std;
 
 class Edge {
-    Edge(uint src, uint dst, uint cap) : src(src), dest(dst), cap(cap) {}
+    Edge(int src, int dst, int cap) : src(src), dest(dst), cap(cap) {}
 
 public:
-    uint src, dest, cap, flow; // source, destination, capacity, and flow
+    int src, dest, cap;    // source, destination, capacity
+    int flow = 0;           // flow (may be negative if in opposite direction)
     Edge * reverse = nullptr;
 
-    static pair<Edge*, Edge*> construct_undirected_pair(uint node1, uint node2, uint cap) {
+    static pair<Edge*, Edge*> construct_undirected_pair(int node1, int node2, int cap) {
         Edge* e1 = new Edge(node1, node2, cap);
         Edge* e2 = new Edge(node2, node1, cap);
         e1->reverse = e2;
@@ -32,14 +33,14 @@ public:
  * @param n_vertices
  * @param predecessors
  */
-void breadth_first_search(const multimap<uint, Edge*>& edges, vector<Edge*>& predecessors, uint n_vertices, uint src) {
+void breadth_first_search(const multimap<int, Edge*>& edges, vector<Edge*>& predecessors, int n_vertices, int src) {
     predecessors.clear();
     predecessors.resize(n_vertices, nullptr);
 
-    queue<uint> q;
+    queue<int> q;
     q.push(src);
     while (! q.empty()) {
-        uint curr = q.front(); q.pop();
+        int curr = q.front(); q.pop();
         for (auto it = edges.equal_range(curr); it.first != it.second; ++it.first) {
             Edge* e = it.first->second;
             if (predecessors[e->dest] == nullptr and e->dest != src and e->cap > e->flow) {
@@ -56,8 +57,8 @@ void breadth_first_search(const multimap<uint, Edge*>& edges, vector<Edge*>& pre
  * @param n_vertices
  * @return the maximum flow, or -1 if source and sink are not connected
  */
-int edmonds_karp(const multimap<uint, Edge*>& edges, uint n_vertices, uint src, uint sink) {
-    uint flow = 0;
+int edmonds_karp(const multimap<int, Edge*>& edges, int n_vertices, int src, int sink) {
+    int flow = 0;
     bool first_iter = true;
 
     // Predecessors
@@ -73,7 +74,7 @@ int edmonds_karp(const multimap<uint, Edge*>& edges, uint n_vertices, uint src, 
 
         // 2. If an augmenting path was found
         if (predecessors[sink] != nullptr) {
-            uint df = numeric_limits<uint>::max();
+            int df = numeric_limits<int>::max();
             // 2.1. See how much flow we can send
             for (Edge * e = predecessors[sink]; e != nullptr; e = predecessors[e->src])
                 df = min(e->cap - e->flow, df);
@@ -88,19 +89,19 @@ int edmonds_karp(const multimap<uint, Edge*>& edges, uint n_vertices, uint src, 
         }
     } while (predecessors[sink] != nullptr);
 
-    return (uint) flow;
+    return (int) flow;
 }
 
 class TestCase {
-    uint n_vertices;
-    uint n_edges;
-    multimap<uint, Edge*> edges;
+    int n_vertices;
+    int n_edges;
+    multimap<int, Edge*> edges;
 
 public:
     explicit TestCase(istream& in) {
         in >> n_vertices >> n_edges;
-        uint a, b, c;
-        for (uint i = 0; i < n_edges; ++i) {
+        int a, b, c;
+        for (int i = 0; i < n_edges; ++i) {
             in >> a >> b >> c;
             auto edge_pair = Edge::construct_undirected_pair(a, b, c);
             edges.insert(make_pair(edge_pair.first->src, edge_pair.first));
@@ -123,9 +124,9 @@ public:
 int main() {
     std::ios_base::sync_with_stdio(false);
 
-    uint num_cases;
+    int num_cases;
     cin >> num_cases;
-    for (uint i = 0; i < num_cases; ++i) {
+    for (int i = 0; i < num_cases; ++i) {
         cout << "Case #" << i + 1 << ": " << TestCase(cin).solve() << endl;
     }
 
