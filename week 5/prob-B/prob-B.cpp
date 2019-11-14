@@ -120,7 +120,7 @@ public:
     }
 
     void make_flow_network() {
-        this->n_vertices = this->n_people + this->n_dishes + this->n_beverages;
+        this->n_vertices = this->n_people + 2 * this->n_dishes + this->n_beverages;
 
         // Connect a new arbitrary source node to all people (consumers)
         this->source = this->n_vertices++;
@@ -130,12 +130,23 @@ public:
             edges.insert(make_pair(p.second->src, p.second));
         } // NOTE undirected edges here are useless (and possibly incorrect?)
 
-        // Connect all people to their favoured dishes; and favoured dishes to beverages
+        // Connect all dishes to an auxiliary vertex to control outgoing flow
+        for (int i = 1; i <= this->n_dishes; ++i) {
+            int dish_vertex = dish_to_vertex_id(i);
+            int aux_vertex = dish_to_aux_vertex_id(i);
+            auto edg = Edge::construct_directed_pair(dish_vertex, aux_vertex, 1);
+            edges.insert(make_pair(edg.first->src, edg.first));
+            edges.insert(make_pair(edg.second->src, edg.second));
+        }
+
+        // Connect all people to their favoured dishes; and favoured dishes' auxiliary outgoing vertex to beverages
         // (creates constraint that both must be correct for flow to pass)
         for (int i = 0; i < this->n_people; ++i) {
-            int d_pref = dish_prefs[i], b_pref = beverage_prefs[i];
-            auto d_edge = Edge::construct_directed_pair(person_to_vertex_id(i), dish_to_vertex_id(d_pref), 1);
-            auto b_edge = Edge::construct_directed_pair(dish_to_vertex_id(d_pref), beverage_to_vertex_id(b_pref), 1);
+            int dish_vertex = dish_to_vertex_id(dish_prefs[i]);
+            int dish_aux_vertex = dish_to_aux_vertex_id(dish_prefs[i]);
+            int bev_vertex = beverage_to_vertex_id(beverage_prefs[i]);
+            auto d_edge = Edge::construct_directed_pair(person_to_vertex_id(i), dish_vertex, 1);
+            auto b_edge = Edge::construct_directed_pair(dish_aux_vertex, bev_vertex, 1);
 
             // Dish preference (Person -> Dish)
             edges.insert(make_pair(d_edge.first->src, d_edge.first));
@@ -153,21 +164,55 @@ public:
             edges.insert(make_pair(p.first->src, p.first));
             edges.insert(make_pair(p.second->src, p.second));
         }
+
+//        // Print all edges
+//        for (auto p : edges) {
+//            if (p.second->cap > 0)
+//                cout << p.second->src << " -> " << p.second->dest << endl;
+//        }
     }
 
+    /**
+     *
+     * @param person numbered 0 to number-of-people
+     * @return
+     */
     int person_to_vertex_id(int person) {
+        assert(person >= 0 and person <= this->n_people - 1);
         // ids in [0; n_people[
         return person; // 0-indexed person id
     }
 
+    /**
+     *
+     * @param dish numbered 1 to number-of-dishes
+     * @return corresponding vertex id, [n_people, n_people + 2 * dishes - 1]
+     */
     int dish_to_vertex_id(int dish) {
+        assert(dish >= 1 and dish <= this->n_dishes);
         // ids in [n_people; n_people + n_dishes[
-        return this->n_people + dish - 1;
+        return this->n_people + 2 * (dish - 1);
     }
 
+    /**
+     * Auxiliary vertex to control outgoing flow of a dish node
+     * @param dish numbered 1 to number-of-dishes
+     * @return corresponding vertex id, [n_people + 1, n_people + 2 * dishes]
+     */
+    int dish_to_aux_vertex_id(int dish) {
+        assert(dish >= 1 and dish <= this->n_dishes);
+        return this->dish_to_vertex_id(dish) + 1;
+    }
+
+    /**
+     *
+     * @param beverage numbered 1 to number-of-beverages
+     * @return corresponding vertex id, [n_people + 2 * dishes, n_people + 2 * dishes + n_]
+     */
     int beverage_to_vertex_id(int beverage) {
+        assert(beverage >= 1 and beverage <= this->n_beverages);
         // ids in [n_people + n_dishes; n_people + n_dishes + n_beverages[
-        return this->n_people + this->n_dishes + beverage - 1;
+        return this->n_people + 2 * this->n_dishes + beverage - 1;
     }
 
     string solve() {
