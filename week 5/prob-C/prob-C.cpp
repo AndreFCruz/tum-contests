@@ -8,15 +8,13 @@
 
 using namespace std;
 
-// https://stackoverflow.com/questions/37096772/removing-minimum-no-of-edges-to-disconnect-two-vertices-in-a-graph
-
 class Edge {
-    Edge(int src, int dst, int cap) : src(src), dest(dst), cap(cap) {}
-
 public:
-    int src, dest, cap;    // source, destination, capacity
+    int src, dest, cap;     // source, destination, capacity
     int flow = 0;           // flow (may be negative if in opposite direction)
     Edge * reverse = nullptr;
+
+    Edge(int src, int dst, int cap) : src(src), dest(dst), cap(cap) {}
 
     static pair<Edge*, Edge*> construct_undirected_pair(int node1, int node2, int cap) {
         Edge* e1 = new Edge(node1, node2, cap);
@@ -97,25 +95,93 @@ int edmonds_karp(const multimap<int, Edge*>& edges, int n_vertices, int src, int
 class TestCase {
     int n_vertices;
     int n_edges;
+    multimap<int, int> connections;
     multimap<int, Edge*> edges;
+
+    int source, sink;
 
 public:
     explicit TestCase(istream& in) {
         in >> n_vertices >> n_edges;
+        this->source = 1;
+        this->sink = this->n_vertices;
 
         int a, b;
         for (int i = 0; i < n_edges; ++i) {
             in >> a >> b;
-            auto edge_pair = Edge::construct_undirected_pair(a, b, 1);
+            connections.insert(make_pair(a, b));
+        }
+
+        make_flow_network();
+    }
+
+    /**
+     * Convert each node in two nodes (one for input and another for output),
+     *  with a 1-capacity edge between them, to control output flow.
+     * And construct all edges.
+     */
+    void make_flow_network() {
+
+        // Create an auxiliary output node for each vertex (for all vertices except source or sink)
+        for (int i = 2; i <= this->n_vertices - 1; ++i) {
+            auto edge_pair = Edge::construct_undirected_pair(i, vertex_to_aux_vertex_id(i), 1);
             edges.insert(make_pair(edge_pair.first->src, edge_pair.first));
             edges.insert(make_pair(edge_pair.second->src, edge_pair.second));
         }
+
+        // Connect nodes
+        for (auto p : connections) {
+            auto edge_pair = construct_edge_pair(p.first, p.second, 1);
+
+            edges.insert(make_pair(edge_pair.first->src, edge_pair.first));
+            edges.insert(make_pair(edge_pair.second->src, edge_pair.second));
+        }
+
+        // New total vertex count
+        this->n_vertices = 2 + (this->n_vertices - 2) * 2;
+
+//        // Print all edges
+//        for (auto p : edges) {
+//            if (p.second->cap > 0)
+//                cout << p.second->src << " -> " << p.second->dest << endl;
+//        }
+    }
+
+    /**
+     * All incoming edges go to regular node, all outgoing edges come from auxiliary outgoing node
+     * (except for graph's source).
+     */
+    pair<Edge*, Edge*> construct_edge_pair(int src, int dst, int cap) {
+        if (src > dst) swap(src, dst);
+
+        Edge* e1;
+        if (src == this->source || src == this->sink) {
+            e1 = new Edge(src, dst, cap);
+        } else {
+            e1 = new Edge(vertex_to_aux_vertex_id(src), dst, cap);
+        }
+
+        Edge* e2;
+        if (dst == this->source || dst == this->sink) {
+            e2 = new Edge(dst, src, cap);
+        } else {
+            e2 = new Edge(vertex_to_aux_vertex_id(dst), src, cap);
+        }
+        e1->reverse = e2;
+        e2->reverse = e1;
+
+        this->edges.insert(make_pair(e1->src, e1));
+        this->edges.insert(make_pair(e2->src, e2));
+        return make_pair(e1, e2);
+    }
+
+    int vertex_to_aux_vertex_id(int vertex) {
+        assert(vertex > this->source and vertex < this->sink);
+        return this->sink - this->source + vertex;
     }
 
     string solve() {
-        // TODO we want minimum cut of the graph, which is the max-flow of the graph;
-        int max_flow = edmonds_karp(this->edges, this->n_vertices + 1, 1, this->n_vertices);
-
+        int max_flow = edmonds_karp(this->edges, this->n_vertices + 1, this->source, this->sink);
         return to_string(max_flow);
     }
 };
