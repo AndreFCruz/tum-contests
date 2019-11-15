@@ -95,16 +95,28 @@ int edmonds_karp(const multimap<int, Edge*>& edges, int n_vertices, int src, int
 }
 
 class TestCase {
+    int n_vertices;
+    int n_edges;
+    multimap<int, Edge*> edges;
 
 public:
     explicit TestCase(istream& in) {
+        in >> n_vertices >> n_edges;
 
+        int a, b;
+        for (int i = 0; i < n_edges; ++i) {
+            in >> a >> b;
+            auto edge_pair = Edge::construct_undirected_pair(a, b, 1);
+            edges.insert(make_pair(edge_pair.first->src, edge_pair.first));
+            edges.insert(make_pair(edge_pair.second->src, edge_pair.second));
+        }
     }
 
     string solve() {
         // TODO we want minimum cut of the graph, which is the max-flow of the graph;
+        int max_flow = edmonds_karp(this->edges, this->n_vertices + 1, 1, this->n_vertices);
 
-        return "impossibruuu";
+        return to_string(max_flow);
     }
 };
 
