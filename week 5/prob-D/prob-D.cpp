@@ -26,10 +26,6 @@ using namespace std;
 
     Output:
         - maximum flow value
-
-    Todo:
-        - implement Phase II (flow network from preflow network)
-        - implement GetMinCut()
 */
 
 template <class T> struct Edge {
@@ -172,13 +168,19 @@ public:
         this->n_vertices += 2;
     }
 
+    /**
+     * For each team, t, find out if they can win the championship:
+     *  if t wins all its games, can other teams play between themselves in a way that leaves
+     *  no team with more wins than t ? (is there a valid arrangement of wins that leaves t as
+     *  a winner or tied?)
+     */
     string solve() {
         string answer = "";
 
         // For all nodes representing teams (all other than source and sink)
         for (int team = 1; team < this->n_vertices - 1; ++team) {
 
-            // Count maximum possible number of wins
+            // Count maximum possible number of wins for this team
             int max_wins = this->wins[team];
             for (auto p : connections) {
                 if (p.first == team or p.second == team)
@@ -189,12 +191,14 @@ public:
             vector<int> tmp_wins(this->n_vertices - 1, 0);
 
             for (auto p : connections) {
+                // Ignore team's games as this will all be wins for team
                 if (p.first == team or p.second == team)
                     continue;
                 tmp_wins[p.first] += 1;
                 push_relabel.AddEdge(p.first, p.second, 1);
             }
 
+            // Each edge represents a game (flow represents a win/point)
             for (int i = 1; i < this->n_vertices - 1; ++i) {
                 if (i == team) continue;
                 // Add edge from source to team
@@ -206,6 +210,8 @@ public:
             }
 
             push_relabel.GetMaxFlow(this->source, this->sink);
+
+            // If there's no excess left on any node, than configuration is valid (all flow could be drained)
             bool yes = true;
             for (int i = 0; i < this->n_vertices - 1; ++i) {
                 if (push_relabel.excess[i] != 0) {
