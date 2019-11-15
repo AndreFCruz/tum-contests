@@ -175,6 +175,19 @@ public:
         return col + row * grid_size + day * (grid_size * grid_size);
     }
 
+    /**
+     * Converts the given vertex id into a tuple of corresponding <day, row, col>.
+     */
+    tuple<int, int, int> from_vertex_id(int vertex_id) {
+        int day = vertex_id / (grid_size * grid_size);
+        vertex_id -= day * (grid_size * grid_size);
+        int row = vertex_id / grid_size;
+        vertex_id -= row * grid_size;
+        int col = vertex_id;
+//        return {day, row, col};
+        return make_tuple(day, row, col);
+    }
+
     void add_grid_edges(PushRelabel<int>& pr, int day) {
         for (int row = 0; row < this->grid_size; ++row) {
             for (int col = 0; col < this->grid_size; ++col) {
