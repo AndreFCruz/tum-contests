@@ -171,40 +171,54 @@ public:
     /**
      * Translates node's features to its vertex index/id.
      */
-    int to_vertex_id(int row, int col, int day) {
-        return col + row * grid_size + day * (grid_size * grid_size);
+    int to_vertex_id(int row, int col, int day, bool offset) {
+        return col + row * grid_size + day * (grid_size * grid_size) + (offset ? 1 : 0) * (n_nights + 1) * (grid_size * grid_size);
     }
 
     /**
-     * Converts the given vertex id into a tuple of corresponding <day, row, col>.
+     * Converts the given vertex id into a tuple of corresponding <offset, day, row, col>.
      */
-    tuple<int, int, int> from_vertex_id(int vertex_id) {
+    tuple<int, int, int, int> from_vertex_id(int vertex_id) {
+        int offset = vertex_id / ((n_nights + 1) * grid_size * grid_size);
+        vertex_id -= offset * ((n_nights + 1) * grid_size * grid_size);
         int day = vertex_id / (grid_size * grid_size);
         vertex_id -= day * (grid_size * grid_size);
         int row = vertex_id / grid_size;
         vertex_id -= row * grid_size;
         int col = vertex_id;
-//        return {day, row, col};
-        return make_tuple(day, row, col);
+        return make_tuple(offset, day, row, col);
     }
 
     void add_grid_edges(PushRelabel<int>& pr, int day) {
+        assert(day >= 0 and day <= n_nights);
         for (int row = 0; row < this->grid_size; ++row) {
             for (int col = 0; col < this->grid_size; ++col) {
-                // Edge downwards
+                // Edge southwards
                 if (row < this->grid_size - 1) {
-                    int a = to_vertex_id(row, col, day);
-                    int b = to_vertex_id(row + 1, col, day);
-                    pr.AddEdge(a, b, 1);
-                    pr.AddEdge(b, a, 1);
+                    int src = to_vertex_id(row, col, day, false);
+                    int dst = to_vertex_id(row + 1, col, day, true);
+                    pr.AddEdge(src, dst, 1);
                 }
 
-                // Edge rightwards
+                // Edge northwards
+                if (row > 0) {
+                    int src = to_vertex_id(row, col, day, false);
+                    int dst = to_vertex_id(row - 1, col, day, true);
+                    pr.AddEdge(src, dst, 1);
+                }
+
+                // Edge eastwards
                 if (col < this->grid_size - 1) {
-                    int a = to_vertex_id(row, col, day);
-                    int b = to_vertex_id(row, col + 1, day);
-                    pr.AddEdge(a, b, 1);
-                    pr.AddEdge(b, a, 1);
+                    int src = to_vertex_id(row, col, day, false);
+                    int dst = to_vertex_id(row, col + 1, day, true);
+                    pr.AddEdge(src, dst, 1);
+                }
+
+                // Edge westwards
+                if (col > 0) {
+                    int src = to_vertex_id(row, col, day, false);
+                    int dst = to_vertex_id(row, col - 1, day, true);
+                    pr.AddEdge(src, dst, 1);
                 }
             }
         }
@@ -217,12 +231,15 @@ public:
      * @param night index of current night in range [0, n_nights[
      */
     void add_night_edges(PushRelabel<int>& pr, int night) {
+        assert(night >= 0 and night <= n_nights - 1);
         for (int row = 0; row < grid_size; ++row) {
             for (int col = 0; col < grid_size; ++col) {
 
                 // Is node survivable?
                 if (grid_height[row][col] > nightly_snow_height[night]) {
-                    pr.AddEdge(to_vertex_id(row, col, night), to_vertex_id(row, col, night+1), 1);
+                    int src = to_vertex_id(row, col, night, true);
+                    int dst = to_vertex_id(row, col, night+1, false);
+                    pr.AddEdge(src, dst, 1);
                 }
             }
         }
@@ -234,7 +251,7 @@ public:
      * - different days are joined through a 1-capacity edge if rider could survive that night.
      */
     string solve() {
-        int n_vertices = 3 + (grid_size * grid_size) * (n_nights + 1);
+        int n_vertices = 3 + 2 * (grid_size * grid_size) * (n_nights + 1);
         PushRelabel<int> pr(n_vertices);
 
         int pre_source = n_vertices - 3, source = n_vertices - 2, sink = n_vertices - 1;
@@ -246,7 +263,7 @@ public:
             pr.AddEdge(source, i, 1);
 
         // Add edges from lat day's nodes to sink
-        for (int i = grid_size * grid_size * n_nights; i < grid_size * grid_size * (n_nights + 1); ++i)
+        for (int i = n_vertices - 3 - (grid_size * grid_size); i < n_vertices - 3; ++i)
             pr.AddEdge(i, sink, 1);
 
         // For every day, add edges between neighbouring grid nodes
