@@ -15,27 +15,6 @@ public:
     virtual ~MaxFlowAlgorithm() = default;
 };
 
-class TestCase {
-    int grid_size;
-    int n_riders;
-    int n_nights;
-
-    vector<vector<int>> grid_height;
-    vector<pair<int, int>> rider_pos;
-    vector<int> nightly_snow_height;
-
-public:
-    explicit TestCase(istream& in);
-
-    int to_vertex_id(int row, int col, int day, bool offset);
-    tuple<int, int, int, int> from_vertex_id(int vertex_id);
-    void add_grid_edges(MaxFlowAlgorithm& algo, int day);
-    void add_night_edges(MaxFlowAlgorithm& algo, int night);
-    string solve();
-};
-
-TestCase* global_test_case = nullptr;
-
 // Push-Relabel Max-Flow Algorithm from https://codeforces.com/blog/entry/14378
 struct Edge {
     int from, to, index;
@@ -212,20 +191,6 @@ public:
             // 1. Run BFS to find the shortest path from source to sink
             breadth_first_search(edges, predecessors, n_vertices, source);
 
-            // TODO delete this loop
-            // Prints the augmenting path's nodes
-            Edge* pred = predecessors[sink];
-            while (pred != nullptr) {
-                if (pred->src == source) {
-                    cout << "\n<- source";
-                } else {
-                    auto t = global_test_case->from_vertex_id(pred->src);
-                    cout << "\n<- offset: " << get<0>(t) << "; day: " << get<1>(t) << "; row: " << get<2>(t) << "; col: " << get<3>(t) << ";";
-                }
-                pred = predecessors[pred->src];
-            }
-            cout << " ;;; \n\n";
-
             if (first_iter) {
                 if (predecessors[sink] == nullptr) return -1;
                 first_iter = false;
@@ -252,8 +217,25 @@ public:
     }
 };
 
+class TestCase {
+    int grid_size;
+    int n_riders;
+    int n_nights;
 
-// Definition of TestCase Methods
+    vector<vector<int>> grid_height;
+    vector<pair<int, int>> rider_pos;
+    vector<int> nightly_snow_height;
+
+public:
+    explicit TestCase(istream& in);
+
+    int to_vertex_id(int row, int col, int day, bool offset);
+    tuple<int, int, int, int> from_vertex_id(int vertex_id);
+    void add_grid_edges(MaxFlowAlgorithm& algo, int day);
+    void add_night_edges(MaxFlowAlgorithm& algo, int night);
+    string solve();
+};
+
 TestCase::TestCase(istream& in) {
     in >> grid_size >> n_riders >> n_nights;
 
@@ -363,8 +345,6 @@ void TestCase::add_night_edges(MaxFlowAlgorithm& algo, int night) {
  * - different days are joined through a 1-capacity edge if rider could survive that night.
  */
 string TestCase::solve() {
-    global_test_case = this; // TODO DELETE;
-
     int n_vertices = 2 + 2 * (grid_size * grid_size) * (n_nights + 1);
     MaxFlowAlgorithm* max_flow_algo = new PushRelabel(n_vertices);
 //    MaxFlowAlgorithm* max_flow_algo = new EdmondsKarp(n_vertices);
