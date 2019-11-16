@@ -15,6 +15,27 @@ public:
     virtual ~MaxFlowAlgorithm() = default;
 };
 
+class TestCase {
+    int grid_size;
+    int n_riders;
+    int n_nights;
+
+    vector<vector<int>> grid_height;
+    vector<pair<int, int>> rider_pos;
+    vector<int> nightly_snow_height;
+
+public:
+    explicit TestCase(istream& in);
+
+    int to_vertex_id(int row, int col, int day, bool offset);
+    tuple<int, int, int, int> from_vertex_id(int vertex_id);
+    void add_grid_edges(MaxFlowAlgorithm& algo, int day);
+    void add_night_edges(MaxFlowAlgorithm& algo, int night);
+    string solve();
+};
+
+TestCase* global_test_case = nullptr;
+
 // Push-Relabel Max-Flow Algorithm from https://codeforces.com/blog/entry/14378
 struct Edge {
     int from, to, index;
@@ -191,6 +212,20 @@ public:
             // 1. Run BFS to find the shortest path from source to sink
             breadth_first_search(edges, predecessors, n_vertices, source);
 
+            // TODO delete this loop
+            // Prints the augmenting path's nodes
+            Edge* pred = predecessors[sink];
+            while (pred != nullptr) {
+                if (pred->src == source) {
+                    cout << "\n<- source";
+                } else {
+                    auto t = global_test_case->from_vertex_id(pred->src);
+                    cout << "\n<- offset: " << get<0>(t) << "; day: " << get<1>(t) << "; row: " << get<2>(t) << "; col: " << get<3>(t) << ";";
+                }
+                pred = predecessors[pred->src];
+            }
+            cout << " ;;; \n\n";
+
             if (first_iter) {
                 if (predecessors[sink] == nullptr) return -1;
                 first_iter = false;
@@ -217,149 +252,150 @@ public:
     }
 };
 
-class TestCase {
-    int grid_size;
-    int n_riders;
-    int n_nights;
 
-    vector<vector<int>> grid_height;
-    vector<pair<int, int>> rider_pos;
-    vector<int> nightly_snow_height;
+// Definition of TestCase Methods
+TestCase::TestCase(istream& in) {
+    in >> grid_size >> n_riders >> n_nights;
 
-public:
-    explicit TestCase(istream& in) {
-        in >> grid_size >> n_riders >> n_nights;
+    this->grid_height = vector<vector<int>>(grid_size, vector<int>(grid_size));
+    for (int row = 0; row < grid_size; ++row) {
+        for (int col = 0; col < grid_size; ++col) {
+            in >> grid_height[row][col];
+        }
+    }
 
-        this->grid_height = vector<vector<int>>(grid_size, vector<int>(grid_size));
-        for (int row = 0; row < grid_size; ++row) {
-            for (int col = 0; col < grid_size; ++col) {
-                in >> grid_height[row][col];
+    this->rider_pos = vector<pair<int, int>>(n_riders);
+    for (int i = 0; i < n_riders; ++i) {
+        in >> rider_pos[i].first >> rider_pos[i].second;
+    }
+
+    this->nightly_snow_height = vector<int>(n_nights);
+    for (int i = 0; i < n_nights; ++i) {
+        in >> nightly_snow_height[i];
+    }
+}
+
+/**
+ * Translates node's features to its vertex index/id.
+ */
+int TestCase::to_vertex_id(int row, int col, int day, bool offset) {
+    assert(row < grid_size and col < grid_size and day < n_nights + 1);
+    return col + row * grid_size + day * (grid_size * grid_size) + (offset ? 1 : 0) * (n_nights + 1) * (grid_size * grid_size);
+}
+
+/**
+ * Converts the given vertex id into a tuple of corresponding <offset, day, row, col>.
+ */
+tuple<int, int, int, int> TestCase::from_vertex_id(int vertex_id) {
+    assert(vertex_id < to_vertex_id(grid_size-1, grid_size-1, n_nights, true));
+    int offset = vertex_id / ((n_nights + 1) * grid_size * grid_size);
+    vertex_id -= offset * ((n_nights + 1) * grid_size * grid_size);
+    int day = vertex_id / (grid_size * grid_size);
+    vertex_id -= day * (grid_size * grid_size);
+    int row = vertex_id / grid_size;
+    vertex_id -= row * grid_size;
+    int col = vertex_id;
+    return make_tuple(offset, day, row, col);
+}
+
+void TestCase::add_grid_edges(MaxFlowAlgorithm& algo, int day) {
+    assert(day >= 0 and day <= n_nights);
+    for (int row = 0; row < this->grid_size; ++row) {
+        for (int col = 0; col < this->grid_size; ++col) {
+            // Stay in the same spot
+            algo.AddEdge(to_vertex_id(row, col, day, false), to_vertex_id(row, col, day, true), 1);
+
+            // Edge southwards
+            if (row < this->grid_size - 1) {
+                int src = to_vertex_id(row, col, day, false);
+                int dst = to_vertex_id(row + 1, col, day, true);
+                algo.AddEdge(src, dst, 1);
             }
-        }
 
-        this->rider_pos = vector<pair<int, int>>(n_riders);
-        for (int i = 0; i < n_riders; ++i) {
-            in >> rider_pos[i].first >> rider_pos[i].second;
-        }
+            // Edge northwards
+            if (row > 0) {
+                int src = to_vertex_id(row, col, day, false);
+                int dst = to_vertex_id(row - 1, col, day, true);
+                algo.AddEdge(src, dst, 1);
+            }
 
-        this->nightly_snow_height = vector<int>(n_nights);
-        for (int i = 0; i < n_nights; ++i) {
-            in >> nightly_snow_height[i];
-        }
-    }
+            // Edge eastwards
+            if (col < this->grid_size - 1) {
+                int src = to_vertex_id(row, col, day, false);
+                int dst = to_vertex_id(row, col + 1, day, true);
+                algo.AddEdge(src, dst, 1);
+            }
 
-    /**
-     * Translates node's features to its vertex index/id.
-     */
-    int to_vertex_id(int row, int col, int day, bool offset) {
-        return col + row * grid_size + day * (grid_size * grid_size) + (offset ? 1 : 0) * (n_nights + 1) * (grid_size * grid_size);
-    }
-
-    /**
-     * Converts the given vertex id into a tuple of corresponding <offset, day, row, col>.
-     */
-    tuple<int, int, int, int> from_vertex_id(int vertex_id) {
-        int offset = vertex_id / ((n_nights + 1) * grid_size * grid_size);
-        vertex_id -= offset * ((n_nights + 1) * grid_size * grid_size);
-        int day = vertex_id / (grid_size * grid_size);
-        vertex_id -= day * (grid_size * grid_size);
-        int row = vertex_id / grid_size;
-        vertex_id -= row * grid_size;
-        int col = vertex_id;
-        return make_tuple(offset, day, row, col);
-    }
-
-    void add_grid_edges(MaxFlowAlgorithm& algo, int day) {
-        assert(day >= 0 and day <= n_nights);
-        for (int row = 0; row < this->grid_size; ++row) {
-            for (int col = 0; col < this->grid_size; ++col) {
-                // Edge southwards
-                if (row < this->grid_size - 1) {
-                    int src = to_vertex_id(row, col, day, false);
-                    int dst = to_vertex_id(row + 1, col, day, true);
-                    algo.AddEdge(src, dst, 1);
-                }
-
-                // Edge northwards
-                if (row > 0) {
-                    int src = to_vertex_id(row, col, day, false);
-                    int dst = to_vertex_id(row - 1, col, day, true);
-                    algo.AddEdge(src, dst, 1);
-                }
-
-                // Edge eastwards
-                if (col < this->grid_size - 1) {
-                    int src = to_vertex_id(row, col, day, false);
-                    int dst = to_vertex_id(row, col + 1, day, true);
-                    algo.AddEdge(src, dst, 1);
-                }
-
-                // Edge westwards
-                if (col > 0) {
-                    int src = to_vertex_id(row, col, day, false);
-                    int dst = to_vertex_id(row, col - 1, day, true);
-                    algo.AddEdge(src, dst, 1);
-                }
+            // Edge westwards
+            if (col > 0) {
+                int src = to_vertex_id(row, col, day, false);
+                int dst = to_vertex_id(row, col - 1, day, true);
+                algo.AddEdge(src, dst, 1);
             }
         }
     }
+}
 
-    /**
-     * Adds the edges between corresponding nodes of different days, depending on
-     *  whether that node is survivable.
-     * @param algo MaxFlowAlgorithm instance to be modified.
-     * @param night index of current night in range [0, n_nights[
-     */
-    void add_night_edges(MaxFlowAlgorithm& algo, int night) {
-        assert(night >= 0 and night <= n_nights - 1);
-        for (int row = 0; row < grid_size; ++row) {
-            for (int col = 0; col < grid_size; ++col) {
+/**
+ * Adds the edges between corresponding nodes of different days, depending on
+ *  whether that node is survivable.
+ * @param algo MaxFlowAlgorithm instance to be modified.
+ * @param night index of current night in range [0, n_nights[
+ */
+void TestCase::add_night_edges(MaxFlowAlgorithm& algo, int night) {
+    assert(night >= 0 and night <= n_nights - 1);
+    for (int row = 0; row < grid_size; ++row) {
+        for (int col = 0; col < grid_size; ++col) {
 
-                // Is node survivable?
-                if (grid_height[row][col] > nightly_snow_height[night]) {
-                    int src = to_vertex_id(row, col, night, true);
-                    int dst = to_vertex_id(row, col, night+1, false);
-                    algo.AddEdge(src, dst, 1);
-                }
+            // Is node survivable?
+            if (grid_height[row][col] > nightly_snow_height[night]) {
+                int src = to_vertex_id(row, col, night, true);
+                int dst = to_vertex_id(row, col, night+1, false);
+                algo.AddEdge(src, dst, 1);
             }
         }
     }
+}
 
-    /**
-     * Constructs a flow network representing the "Goat Riders" problem.
-     * - each day is a repetition of the original grid/network in a different dimension;
-     * - different days are joined through a 1-capacity edge if rider could survive that night.
-     */
-    string solve() {
-        int n_vertices = 3 + 2 * (grid_size * grid_size) * (n_nights + 1);
-        MaxFlowAlgorithm* max_flow_algo = new PushRelabel(n_vertices);
+/**
+ * Constructs a flow network representing the "Goat Riders" problem.
+ * - each day is a repetition of the original grid/network in a different dimension;
+ * - different days are joined through a 1-capacity edge if rider could survive that night.
+ */
+string TestCase::solve() {
+    global_test_case = this; // TODO DELETE;
 
-        int pre_source = n_vertices - 3, source = n_vertices - 2, sink = n_vertices - 1;
-        // Add edge from pre_source to source (to control maximum outgoing flow from source)
-        max_flow_algo->AddEdge(pre_source, source, n_riders);
+    int n_vertices = 2 + 2 * (grid_size * grid_size) * (n_nights + 1);
+    MaxFlowAlgorithm* max_flow_algo = new PushRelabel(n_vertices);
+//    MaxFlowAlgorithm* max_flow_algo = new EdmondsKarp(n_vertices);
 
-        // Add edges from source to first day's nodes
-        for (int i = 0; i < grid_size * grid_size; ++i)
-            max_flow_algo->AddEdge(source, i, 1);
+    int source = n_vertices - 2, sink = n_vertices - 1;
 
-        // Add edges from last day's nodes to sink
-        for (int i = n_vertices - 3 - (grid_size * grid_size); i < n_vertices - 3; ++i)
-            max_flow_algo->AddEdge(i, sink, 1);
-
-        // For every day, add edges between neighbouring grid nodes
-        for (int i = 0; i < n_nights + 1; ++i)
-            add_grid_edges(*max_flow_algo, i);
-
-        // For every night, add edges between analogous survivable nodes
-        for (int i = 0; i < n_nights; ++i) {
-            add_night_edges(*max_flow_algo, i);
-        }
-
-        int max_flow = max_flow_algo->GetMaxFlow(pre_source, sink);
-        delete max_flow_algo;
-        return to_string(max_flow);
+    // Add edges from source to riders' positions on first day
+    for (auto p : this->rider_pos) {
+        max_flow_algo->AddEdge(source, to_vertex_id(p.first, p.second, 0, false), 1);
     }
-};
+
+    // Add edges from last day's nodes to sink
+    for (int row = 0; row < grid_size; ++row) {
+        for (int col = 0; col < grid_size; ++col) {
+            max_flow_algo->AddEdge(to_vertex_id(row, col, n_nights, true), sink, 1);
+        }
+    }
+
+    // For every day, add edges between neighbouring grid nodes
+    for (int i = 0; i < n_nights + 1; ++i)
+        add_grid_edges(*max_flow_algo, i);
+
+    // For every night, add edges between analogous survivable nodes
+    for (int i = 0; i < n_nights; ++i) {
+        add_night_edges(*max_flow_algo, i);
+    }
+
+    int max_flow = max_flow_algo->GetMaxFlow(source, sink);
+    delete max_flow_algo;
+    return to_string(max_flow);
+}
 
 int main() {
     std::ios_base::sync_with_stdio(false);
