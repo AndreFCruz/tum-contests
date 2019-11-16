@@ -89,7 +89,7 @@ int edmonds_karp(const multimap<int, Edge*>& edges, int n_vertices, int src, int
         }
     } while (predecessors[sink] != nullptr);
 
-    return (int) flow;
+    return flow;
 }
 
 class TestCase {

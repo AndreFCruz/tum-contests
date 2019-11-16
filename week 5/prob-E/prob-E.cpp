@@ -8,51 +8,42 @@
 
 using namespace std;
 
-// Push-Relabel Max-Flow Algorithm from https://codeforces.com/blog/entry/14378
-/*
-    Implementation of highest-label push-relabel maximum flow
-    with gap relabeling heuristic.
-
-    Running time:
-        O(|V|^2|E|^{1/2})
-
-    Usage:
-        - add edges by AddEdge()
-        - GetMaxFlow(s, t) returns the maximum flow from s to t
-
-    Input:
-        - graph, constructed using AddEdge()
-        - (s, t), (source, sink)
-
-    Output:
-        - maximum flow value
-*/
-
-template <class T> struct Edge {
-    int from, to, index;
-    T cap, flow;
-
-    Edge(int from, int to, T cap, T flow, int index): from(from), to(to), cap(cap), flow(flow), index(index) {}
+class MaxFlowAlgorithm {
+public:
+    virtual void AddEdge (int from, int to, int cap) = 0;
+    virtual int GetMaxFlow(int source, int sink) = 0;
+    virtual ~MaxFlowAlgorithm() = default;
 };
 
-template <class T> struct PushRelabel {
+// Push-Relabel Max-Flow Algorithm from https://codeforces.com/blog/entry/14378
+struct Edge {
+    int from, to, index;
+    int cap, flow;
+
+    Edge(int from, int to, int cap, int flow, int index): from(from), to(to), cap(cap), flow(flow), index(index) {}
+};
+
+class PushRelabel : public MaxFlowAlgorithm {
     int n;
-    vector <vector <Edge <T>>> adj;
-    vector <T> excess;
+    vector <vector <Edge>> adj;
+    vector <int> excess;
     vector <int> dist, count;
     vector <bool> active;
     vector <vector <int>> B;
     int b;
     queue <int> Q;
 
-    PushRelabel (int n): n(n), adj(n) {}
+public:
+    explicit PushRelabel (int n): n(n), adj(n) {}
+
+    ~PushRelabel() = default;
 
     void AddEdge (int from, int to, int cap) {
-        adj[from].push_back(Edge <T>(from, to, cap, 0, adj[to].size()));
+        adj[from].push_back(Edge (from, to, cap, 0, adj[to].size()));
         if (from == to) {
             adj[from].back().index++;
         }
-        adj[to].push_back(Edge <T>(to, from, 0, 0, adj[from].size() - 1));
+        adj[to].push_back(Edge (to, from, 0, 0, adj[from].size() - 1));
 
     }
 
@@ -64,9 +55,9 @@ template <class T> struct PushRelabel {
         }
     }
 
-    void Push (Edge <T> &e) {
-        T amt = min(excess[e.from], e.cap - e.flow);
-        if (dist[e.from] == dist[e.to] + 1 && amt > T(0)) {
+    void Push (Edge  &e) {
+        int amt = min(excess[e.from], e.cap - e.flow);
+        if (dist[e.from] == dist[e.to] + 1 && amt > int(0)) {
             e.flow += amt;
             adj[e.to][e.index].flow -= amt;
             excess[e.to] += amt;
@@ -112,8 +103,8 @@ template <class T> struct PushRelabel {
         }
     }
 
-    T GetMaxFlow (int s, int t) {
-        dist = vector <int>(n, 0), excess = vector<T>(n, 0), count = vector <int>(n + 1, 0), active = vector <bool>(n, false), B = vector <vector <int>>(n), b = 0;
+    int GetMaxFlow (int s, int t) {
+        dist = vector <int>(n, 0), excess = vector<int>(n, 0), count = vector <int>(n + 1, 0), active = vector <bool>(n, false), B = vector <vector <int>>(n), b = 0;
 
         for (auto &e: adj[s]) {
             excess[s] += e.cap;
@@ -134,6 +125,95 @@ template <class T> struct PushRelabel {
             }
         }
         return excess[t];
+    }
+};
+
+class EdmondsKarp : public MaxFlowAlgorithm {
+    class Edge {
+        Edge(int src, int dst, int cap) : src(src), dest(dst), cap(cap) {}
+
+    public:
+        int src, dest, cap;    // source, destination, capacity
+        int flow = 0;           // flow (may be negative if in opposite direction)
+        Edge * reverse = nullptr;
+
+        static pair<Edge*, Edge*> construct_directed_pair(int from, int to, int cap) {
+            Edge* e1 = new Edge(from, to, cap);
+            Edge* e2 = new Edge(to, from, 0);
+            e1->reverse = e2;
+            e2->reverse = e1;
+            return make_pair(e1, e2);
+        }
+    };
+
+    int n_vertices;
+    multimap<int, Edge*> edges;
+
+public:
+    explicit EdmondsKarp(int n) : n_vertices(n) {};
+
+    ~EdmondsKarp() {
+        for (auto p : edges)
+            delete p.second;
+    }
+
+    static void breadth_first_search(const multimap<int, Edge*>& edges, vector<Edge*>& predecessors, int n_vertices, int src) {
+        predecessors.clear();
+        predecessors.resize(n_vertices, nullptr);
+
+        queue<int> q;
+        q.push(src);
+        while (! q.empty()) {
+            int curr = q.front(); q.pop();
+            for (auto it = edges.equal_range(curr); it.first != it.second; ++it.first) {
+                Edge* e = it.first->second;
+                if (predecessors[e->dest] == nullptr and e->dest != src and e->cap > e->flow) {
+                    predecessors[e->dest] = e;
+                    q.push(e->dest);
+                }
+            }
+        }
+    }
+
+    void AddEdge(int from, int to, int cap) {
+        auto p = Edge::construct_directed_pair(from, to, cap);
+        edges.insert(make_pair(p.first->src, p.first));
+        edges.insert(make_pair(p.second->src, p.second));
+    }
+
+    int GetMaxFlow(int source, int sink) {
+        int flow = 0;
+        bool first_iter = true;
+
+        // Predecessors
+        vector<Edge*> predecessors;
+        do {
+            // 1. Run BFS to find the shortest path from source to sink
+            breadth_first_search(edges, predecessors, n_vertices, source);
+
+            if (first_iter) {
+                if (predecessors[sink] == nullptr) return -1;
+                first_iter = false;
+            }
+
+            // 2. If an augmenting path was found
+            if (predecessors[sink] != nullptr) {
+                int df = numeric_limits<int>::max();
+                // 2.1. See how much flow we can send
+                for (Edge * e = predecessors[sink]; e != nullptr; e = predecessors[e->src])
+                    df = min(e->cap - e->flow, df);
+
+                // 2.2. And update edge by that amount
+                for (Edge * e = predecessors[sink]; e != nullptr; e = predecessors[e->src]) {
+                    e->flow += df;
+                    e->reverse->flow -= df;
+                }
+
+                flow += df;
+            }
+        } while (predecessors[sink] != nullptr);
+
+        return flow;
     }
 };
 
@@ -189,7 +269,7 @@ public:
         return make_tuple(offset, day, row, col);
     }
 
-    void add_grid_edges(PushRelabel<int>& pr, int day) {
+    void add_grid_edges(MaxFlowAlgorithm& algo, int day) {
         assert(day >= 0 and day <= n_nights);
         for (int row = 0; row < this->grid_size; ++row) {
             for (int col = 0; col < this->grid_size; ++col) {
@@ -197,28 +277,28 @@ public:
                 if (row < this->grid_size - 1) {
                     int src = to_vertex_id(row, col, day, false);
                     int dst = to_vertex_id(row + 1, col, day, true);
-                    pr.AddEdge(src, dst, 1);
+                    algo.AddEdge(src, dst, 1);
                 }
 
                 // Edge northwards
                 if (row > 0) {
                     int src = to_vertex_id(row, col, day, false);
                     int dst = to_vertex_id(row - 1, col, day, true);
-                    pr.AddEdge(src, dst, 1);
+                    algo.AddEdge(src, dst, 1);
                 }
 
                 // Edge eastwards
                 if (col < this->grid_size - 1) {
                     int src = to_vertex_id(row, col, day, false);
                     int dst = to_vertex_id(row, col + 1, day, true);
-                    pr.AddEdge(src, dst, 1);
+                    algo.AddEdge(src, dst, 1);
                 }
 
                 // Edge westwards
                 if (col > 0) {
                     int src = to_vertex_id(row, col, day, false);
                     int dst = to_vertex_id(row, col - 1, day, true);
-                    pr.AddEdge(src, dst, 1);
+                    algo.AddEdge(src, dst, 1);
                 }
             }
         }
@@ -227,10 +307,10 @@ public:
     /**
      * Adds the edges between corresponding nodes of different days, depending on
      *  whether that node is survivable.
-     * @param pr PushRelabel instance to be modified.
+     * @param algo MaxFlowAlgorithm instance to be modified.
      * @param night index of current night in range [0, n_nights[
      */
-    void add_night_edges(PushRelabel<int>& pr, int night) {
+    void add_night_edges(MaxFlowAlgorithm& algo, int night) {
         assert(night >= 0 and night <= n_nights - 1);
         for (int row = 0; row < grid_size; ++row) {
             for (int col = 0; col < grid_size; ++col) {
@@ -239,7 +319,7 @@ public:
                 if (grid_height[row][col] > nightly_snow_height[night]) {
                     int src = to_vertex_id(row, col, night, true);
                     int dst = to_vertex_id(row, col, night+1, false);
-                    pr.AddEdge(src, dst, 1);
+                    algo.AddEdge(src, dst, 1);
                 }
             }
         }
@@ -252,30 +332,32 @@ public:
      */
     string solve() {
         int n_vertices = 3 + 2 * (grid_size * grid_size) * (n_nights + 1);
-        PushRelabel<int> pr(n_vertices);
+        MaxFlowAlgorithm* max_flow_algo = new PushRelabel(n_vertices);
 
         int pre_source = n_vertices - 3, source = n_vertices - 2, sink = n_vertices - 1;
         // Add edge from pre_source to source (to control maximum outgoing flow from source)
-        pr.AddEdge(pre_source, source, n_riders);
+        max_flow_algo->AddEdge(pre_source, source, n_riders);
 
         // Add edges from source to first day's nodes
         for (int i = 0; i < grid_size * grid_size; ++i)
-            pr.AddEdge(source, i, 1);
+            max_flow_algo->AddEdge(source, i, 1);
 
-        // Add edges from lat day's nodes to sink
+        // Add edges from last day's nodes to sink
         for (int i = n_vertices - 3 - (grid_size * grid_size); i < n_vertices - 3; ++i)
-            pr.AddEdge(i, sink, 1);
+            max_flow_algo->AddEdge(i, sink, 1);
 
         // For every day, add edges between neighbouring grid nodes
         for (int i = 0; i < n_nights + 1; ++i)
-            add_grid_edges(pr, i);
+            add_grid_edges(*max_flow_algo, i);
 
         // For every night, add edges between analogous survivable nodes
         for (int i = 0; i < n_nights; ++i) {
-            add_night_edges(pr, i);
+            add_night_edges(*max_flow_algo, i);
         }
 
-        return to_string(pr.GetMaxFlow(pre_source, sink));
+        int max_flow = max_flow_algo->GetMaxFlow(pre_source, sink);
+        delete max_flow_algo;
+        return to_string(max_flow);
     }
 };
 
