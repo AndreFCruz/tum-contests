@@ -1,17 +1,83 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
-#include <algorithm>
-#include <map>
-#include <limits>
-#include <queue>
+#include <numeric>
+#include <set>
 
 using namespace std;
 
+struct Dependency {
+    int c;  // first chapter's character
+    int p;  // first chapter
+    int d;  // second chapter's character
+    int q;  // second chapter
+};
+
 
 class TestCase {
+    int n_characters;
+    int n_chapter_dependencies;
+    vector<int> chapters_per_character; // vec[character_i] = number of chapters centered on character_i
+    vector<Dependency> dependencies;
+
+    int n_chapters = 0;
 public:
     explicit TestCase(istream& in) {
+        in >> n_characters >> n_chapter_dependencies;
+
+        chapters_per_character.resize(n_characters);
+        for (int i = 0; i < n_characters; ++i) {
+            in >> chapters_per_character[i];
+            n_chapters += chapters_per_character[i];
+        }
+        assert(n_chapters == reduce(chapters_per_character.begin(), chapters_per_character.end()));
+
+        dependencies.resize(n_chapter_dependencies);
+        for (int i = 0; i < n_chapter_dependencies; ++i) {
+            in >> dependencies[i].c >> dependencies[i].p >> dependencies[i].d >> dependencies[i].q;
+        }
+    }
+
+    bool test(const vector<int>& character_on_chapter) {
+
+    }
+
+    int generate_and_test(vector<int>& character_on_chapter, vector<int>& available, int idx) {
+        if (idx == n_chapters)
+            return test(character_on_chapter);
+
+        for (int i = 0; i < available.size(); ++i) {
+            int character = available[i];
+
+            // Already used ?
+            if (character == -1)
+                continue;
+
+            // Mark as used
+            available[i] = -1;
+
+            // Generate new candidate solution
+            character_on_chapter[idx] = character;
+
+            // Recursively generate new solutions from this one
+            generate_and_test(character_on_chapter, available, idx + 1);
+
+            // Mark as not used (Backtrack)
+            available[i] = character;
+        }
+    }
+
+    string solve() {
+        // Build bag of characters
+        multiset<int> bag_of_characters;    // each character appears once for each time a chapter is based on her
+        for (int i = 0; i < n_characters; ++i) {
+            for (int j = 0; j < chapters_per_character[i]; ++j)
+                bag_of_characters.insert(i);
+        }
+
+        vector<int> character_on_chapter(n_chapters);
+
+        generate_and_test(character_on_chapter, bag_of_characters, 0);
 
     }
 };
