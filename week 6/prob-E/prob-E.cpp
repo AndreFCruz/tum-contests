@@ -23,12 +23,6 @@ public:
                 in >> n;
                 if (n == 0) break;
                 prefs[i].push_back(n);
-//                if (n > 0) {
-//                    prefs[i][n - 1] = FIRST;
-//                } else if (n < 0) {
-//                    prefs[i][(-n) - 1] = SECOND;
-//                } else
-//                    break;
             }
         }
     }
@@ -72,9 +66,8 @@ public:
     }
 
     string solve() {
-//        return bakers < judges ? "no" : "yes";
-
-        // SAT Problem - O(n * 2^m)
+        // SAT Problem, generate recipe clauses and test for judge satisfiability
+        // O(n * 2^m)
         vector<bool> recipes(bakers, FIRST);
         return generate_and_test(recipes, 0) ? "yes" : "no";
     }
