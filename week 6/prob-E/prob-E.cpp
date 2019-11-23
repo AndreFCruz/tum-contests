@@ -2,17 +2,81 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
-#include <map>
-#include <limits>
-#include <queue>
 
 using namespace std;
 
+#define FIRST   true
+#define SECOND  false
 
 class TestCase {
+    int bakers, judges;
+    vector<vector<int>> prefs;
+
 public:
     explicit TestCase(istream& in) {
+        in >> bakers >> judges;
+        prefs.resize(judges, vector<int>());
 
+        for (int i = 0; i < judges; ++i) {
+            int n;
+            while (true) {
+                in >> n;
+                if (n == 0) break;
+                prefs[i].push_back(n);
+//                if (n > 0) {
+//                    prefs[i][n - 1] = FIRST;
+//                } else if (n < 0) {
+//                    prefs[i][(-n) - 1] = SECOND;
+//                } else
+//                    break;
+            }
+        }
+    }
+
+    bool test(vector<bool>& recipes) {
+        cout << "Testing ";
+        for (bool b : recipes)
+            cout << (b ? "0 " : "1 ");
+        cout << endl;
+
+        for (int j = 0; j < judges; ++j) {
+            bool sat = false;
+
+            for (int p : prefs[j]) {
+                if (recipes[p > 0 ? p-1 : (-p) - 1] == (p > 0 ? FIRST : SECOND)) {
+                    sat = true;
+                    break;
+                }
+            }
+            if (!sat) return false;
+        }
+
+        return true;
+    }
+
+    bool generate_and_test(vector<bool>& recipes, size_t idx) {
+        // Generate combinations of recipe assignments to each baker (either FIRST or SECOND)
+        // Test whether recipe assignment satisfies bakers
+
+        // Base case
+        if (idx == recipes.size()) return test(recipes);
+
+        // Recursive case
+        recipes[idx] = true;
+        if (generate_and_test(recipes, idx + 1)) return true;
+
+        recipes[idx] = false;
+        if (generate_and_test(recipes, idx + 1)) return true;
+
+        return false;
+    }
+
+    string solve() {
+//        return bakers < judges ? "no" : "yes";
+
+        // SAT Problem - O(n * 2^m)
+        vector<bool> recipes(bakers, FIRST);
+        return generate_and_test(recipes, 0) ? "yes" : "no";
     }
 };
 
