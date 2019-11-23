@@ -34,10 +34,10 @@ public:
     }
 
     bool test(vector<bool>& recipes) {
-        cout << "Testing ";
-        for (bool b : recipes)
-            cout << (b ? "0 " : "1 ");
-        cout << endl;
+//        cout << "Testing ";
+//        for (bool b : recipes)
+//            cout << (b ? "0 " : "1 ");
+//        cout << endl;
 
         for (int j = 0; j < judges; ++j) {
             bool sat = false;
