@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
-#include <numeric>
+//#include <numeric>
 #include <algorithm>
 
 using namespace std;
@@ -31,8 +31,8 @@ public:
             in >> chapters_per_character[i];
             n_chapters += chapters_per_character[i];
         }
-        assert(n_chapters == reduce(chapters_per_character.begin(), chapters_per_character.end()));
-        assert(n_characters == (int) chapters_per_character.size());
+//        assert(n_chapters == reduce(chapters_per_character.begin(), chapters_per_character.end()));
+//        assert(n_characters == (int) chapters_per_character.size());
 
         dependencies.resize(n_chapter_dependencies);
         for (int i = 0; i < n_chapter_dependencies; ++i) {
