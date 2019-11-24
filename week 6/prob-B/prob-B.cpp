@@ -2,16 +2,16 @@
 #include <vector>
 #include <cassert>
 #include <numeric>
-#include <set>
 #include <algorithm>
 
 using namespace std;
 
 struct Dependency {
     int c;  // first chapter's character
-    int p;  // first chapter
+    int p;  // p-th chapter centered around character c
     int d;  // second chapter's character
-    int q;  // second chapter
+    int q;  // q-th chapter centered around character d
+    // NOTE p-th chapter centered on c must happen before q-th chapter centered on d
 };
 
 
@@ -26,12 +26,13 @@ public:
     explicit TestCase(istream& in) {
         in >> n_characters >> n_chapter_dependencies;
 
-        chapters_per_character.resize(n_characters);
+        chapters_per_character.resize(n_characters, 0);
         for (int i = 0; i < n_characters; ++i) {
             in >> chapters_per_character[i];
             n_chapters += chapters_per_character[i];
         }
         assert(n_chapters == reduce(chapters_per_character.begin(), chapters_per_character.end()));
+        assert(n_characters == (int) chapters_per_character.size());
 
         dependencies.resize(n_chapter_dependencies);
         for (int i = 0; i < n_chapter_dependencies; ++i) {
@@ -51,9 +52,33 @@ public:
     }
 
     bool test(const vector<int>& character_on_chapter) {
-        // TODO
-        // Check dependencies
+        // Print solution that's being tested
+//        for (int c : character_on_chapter)
+//            cout << c << " ";
+//        cout << endl;
+        assert(n_chapters == (int) character_on_chapter.size());
 
+        // Check dependencies
+        for (const Dependency& dep : this->dependencies) {
+            bool dep_holds = true;
+
+            int c_chapters_count = 0;   // count of chapters containing character dep.c
+            int d_chapters_count = 0;   // count of chapters containing character dep.d
+            for (int i = 0; i < n_chapters; ++i) {
+                if (character_on_chapter[i] == dep.c)
+                    ++c_chapters_count;
+                else if (character_on_chapter[i] == dep.d)
+                    ++d_chapters_count;
+
+                if (c_chapters_count == dep.p)
+                    dep_holds = dep_holds and (d_chapters_count < dep.q);
+
+                if (! dep_holds)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     int generate_and_test(vector<int>& character_on_chapter, vector<int>& available, int idx) {
@@ -61,15 +86,21 @@ public:
             return test(character_on_chapter) ? 1 : 0;
 
         int total = 0;
-        for (int i = 0; i < available.size(); ++i) {
-            int character = available[i];
+        for (int character = 0; character < this->n_characters; ++character) { // This happens at most 6 times, as there are at most 6 characters
+            int availableChapters = available[character];
 
-            // Already used ?
-            if (character == -1)
+            // Can't have same character in two sequential chapters -- PRUNE
+            if (idx > 0 and character_on_chapter[idx - 1] == character)
                 continue;
 
+            // No chapters left with this character
+            if (availableChapters <= 0) {
+                assert(availableChapters == 0);
+                continue;
+            }
+
             // Mark as used
-            available[i] = -1;
+            available[character] -= 1;
 
             // Generate new candidate solution
             character_on_chapter[idx] = character;
@@ -78,24 +109,21 @@ public:
             total += generate_and_test(character_on_chapter, available, idx + 1);
 
             // Mark as not used (Backtrack)
-            available[i] = character;
+            available[character] += 1;
         }
 
         return total;
     }
 
     string solve() {
-        // Build bag of characters
-        multiset<int> bag_of_characters;    // each character appears once for each time a chapter is based on her
-        for (int i = 0; i < n_characters; ++i) {
-            for (int j = 0; j < chapters_per_character[i]; ++j)
-                bag_of_characters.insert(i);
-        }
+        // Available chapters centered on a given character
+        vector<int> available(chapters_per_character.begin(), chapters_per_character.end());
 
+        // Candidate solution
         vector<int> character_on_chapter(n_chapters);
 
-        generate_and_test(character_on_chapter, bag_of_characters, 0);
-
+        int total = generate_and_test(character_on_chapter, available, 0);
+        return to_string(total);
     }
 };
 
