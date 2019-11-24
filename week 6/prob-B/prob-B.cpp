@@ -37,6 +37,8 @@ public:
         dependencies.resize(n_chapter_dependencies);
         for (int i = 0; i < n_chapter_dependencies; ++i) {
             in >> dependencies[i].c >> dependencies[i].p >> dependencies[i].d >> dependencies[i].q;
+            dependencies[i].c -= 1;
+            dependencies[i].d -= 1;
         }
 
         // Sort dependencies per character
@@ -52,15 +54,11 @@ public:
     }
 
     bool test(const vector<int>& character_on_chapter) {
-        // Print solution that's being tested
-//        for (int c : character_on_chapter)
-//            cout << c << " ";
-//        cout << endl;
         assert(n_chapters == (int) character_on_chapter.size());
 
         // Check dependencies
         for (const Dependency& dep : this->dependencies) {
-            bool dep_holds = true;
+
 
             int c_chapters_count = 0;   // count of chapters containing character dep.c
             int d_chapters_count = 0;   // count of chapters containing character dep.d
@@ -70,14 +68,19 @@ public:
                 else if (character_on_chapter[i] == dep.d)
                     ++d_chapters_count;
 
-                if (c_chapters_count == dep.p)
-                    dep_holds = dep_holds and (d_chapters_count < dep.q);
-
-                if (! dep_holds)
-                    return false;
+                if (c_chapters_count == dep.p) {
+                    if (d_chapters_count >= dep.q)
+                        return false;   // dependency fails
+                    else
+                        break;          // dependency asserted
+                }
             }
         }
 
+        // Print solution that's being tested
+//        for (int c : character_on_chapter)
+//            cout << c << " ";
+//        cout << endl;
         return true;
     }
 
