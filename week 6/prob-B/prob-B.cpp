@@ -3,6 +3,7 @@
 #include <cassert>
 #include <numeric>
 #include <set>
+#include <algorithm>
 
 using namespace std;
 
@@ -36,16 +37,30 @@ public:
         for (int i = 0; i < n_chapter_dependencies; ++i) {
             in >> dependencies[i].c >> dependencies[i].p >> dependencies[i].d >> dependencies[i].q;
         }
+
+        // Sort dependencies per character
+        sort(dependencies.begin(), dependencies.end(), [](const Dependency& d1, const Dependency& d2) {
+            if (d1.p != d2.p)
+                return d1.p < d2.p;
+            else if (d1.q != d2.q)
+                return d1.q < d2.q;
+            else if (d1.c != d2.c)
+                return d1.c < d2.c;
+            return d1.d < d2.d;
+        });
     }
 
     bool test(const vector<int>& character_on_chapter) {
+        // TODO
+        // Check dependencies
 
     }
 
     int generate_and_test(vector<int>& character_on_chapter, vector<int>& available, int idx) {
         if (idx == n_chapters)
-            return test(character_on_chapter);
+            return test(character_on_chapter) ? 1 : 0;
 
+        int total = 0;
         for (int i = 0; i < available.size(); ++i) {
             int character = available[i];
 
@@ -60,11 +75,13 @@ public:
             character_on_chapter[idx] = character;
 
             // Recursively generate new solutions from this one
-            generate_and_test(character_on_chapter, available, idx + 1);
+            total += generate_and_test(character_on_chapter, available, idx + 1);
 
             // Mark as not used (Backtrack)
             available[i] = character;
         }
+
+        return total;
     }
 
     string solve() {

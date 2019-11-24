@@ -7,10 +7,8 @@
 using namespace std;
 
 void print_chessboard(const vector<vector<bool>> &sol, int n) {
-    for (int i=1; i<=n; ++i)
-    {
-        for (int j=1; j<=n; ++j)
-        {
+    for (int i=1; i<=n; ++i) {
+        for (int j=1; j<=n; ++j) {
             if (sol[i][j])
                 cout << 'x';
             else
@@ -56,19 +54,14 @@ bool check_candidate_solution(const vector<vector<bool>> &sol, int i, int j, int
 
 
 bool check_chessboard(vector<vector<bool>> board, int n) {
-    for (int row=1; row<=n; ++row)
-    {
+    for (int row=1; row<=n; ++row) {
         // check that there is at most one queen
         int queens = 0;
-        for (int column=1; column<=n; ++column)
-        {
-            if (board[row][column])
-            {
+        for (int column=1; column<=n; ++column) {
+            if (board[row][column]) {
                 bool res = check_candidate_solution(board, row, column, n);
-                if (!res)
-                {
+                if (! res)
                     return false;
-                }
                 ++queens;
             }
         }
@@ -81,20 +74,16 @@ bool check_chessboard(vector<vector<bool>> board, int n) {
 
 void find_solutions_for_row(const vector<vector<bool>> &currentSolution, int row, int n, vector<vector<vector<bool>>> &allSolutions) {
     // assume only one queen per row
-    for (int column=1; column<=n; ++column)
-    {
+    for (int column=1; column<=n; ++column) {
         vector<vector<bool>> possibleSolution (currentSolution);
         possibleSolution[row][column] = true;
         bool works = check_candidate_solution(possibleSolution, row, column, n);
         if (works)
-        {
             allSolutions.push_back(possibleSolution);
-        }
     }
 }
 
-bool backtrack(const vector<vector<bool>> &currentSolution, int n, priority_queue<int, vector<int>, greater<int> > pq)
-{
+bool backtrack(const vector<vector<bool>> &currentSolution, int n, priority_queue<int, vector<int>, greater<int> > pq) {
     // a queen is placed in every row
     if (pq.empty()) {
         print_chessboard(currentSolution, n);
@@ -150,19 +139,14 @@ public:
             return;
         }
 
-        // create pq for rows
+        // create priority queue for rows
         priority_queue<int, vector<int>, greater<int> > pq;
         for (int i=1; i<=grid_dim; ++i)
-        {
             if (rows_available[i])
-            {
                 pq.push(i);
-            }
-        }
 
-        if (! backtrack(sol, grid_dim, pq)) {
+        if (! backtrack(sol, grid_dim, pq))
             cout << "impossible\n";
-        }
     }
 };
 
