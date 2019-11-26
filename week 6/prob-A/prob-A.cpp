@@ -124,13 +124,6 @@ public:
     }
 
     bool test(clck_t c) {
-//        try {
-//            string s = clockToString(c);
-//            cout << "-> " << s << endl;
-//        } catch (exception &e) {
-////            cout << "-> inv\n";
-//        }
-
         uint8_t hd = (c << (32u - 28u)) >> 25u;
         uint8_t hu = (c << (32u - 21u)) >> 25u;
         uint8_t md = (c << (32u - 14u)) >> 25u;
@@ -150,8 +143,8 @@ public:
 
     bool generateAndTest(clck_t c, int bit_idx, clck_t mask, int min_offset) {
         // Base case -- no more changes can be made to the clock
-        if (bit_idx == -1) {
-            if ( test(c) ) {
+        if (bit_idx == -1){
+            if ( test(c) ){
                 int n_minutes = clockToMinutes(c);
                 if (min_offset == 0) {
                     candidate_sols.insert(make_pair(n_minutes, 1));
@@ -171,7 +164,7 @@ public:
         if ((c >> bit_idx) & 1) // this bit is set
             return generateAndTest(c, bit_idx - 1, mask, min_offset);
 
-        if ((c >> bit_idx) & 1)
+        if ((mask >> bit_idx) & 1)
             return generateAndTest(c, bit_idx - 1, mask, min_offset);
 
         bool flag = false;
