@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <limits>
 #include <sstream>
+#include <iomanip>
 
 using namespace std;
 
@@ -72,7 +73,23 @@ class TestCase {
 
 public:
     explicit TestCase(istream& in) {
+        int n;
+        in >> n;
 
+        for (int i = 0; i < n; ++i) {
+            uint8_t ht, hu, mt, mu;
+            in >> ht >> hu;
+            in.ignore(); // ignore ':' character
+            in >> mt >> mu;
+
+            ht = charToDigit.at(ht);
+            hu = charToDigit.at(hu);
+            mt = charToDigit.at(mt);
+            mu = charToDigit.at(mu);
+
+            clock_observations.push_back(((clck_t) mu) + ((clck_t) mu << 7u) + ((clck_t) hu << 14u) + ((clck_t) ht << 21u));
+        }
+        in.ignore(); // ignore last new-line
     }
 
     string clockToString(clck_t c) {
@@ -98,6 +115,12 @@ public:
     static bool isValidDigit(uint8_t x) {
         return !(x != n0 && x != n1 && x != n2 && x != n3 && x != n4 && x != n5 && x != n6 && x != n7 && x != n8 &&
                  x != n9);
+    }
+
+    static void printTimeInMins(int n_min) {
+        int hours = n_min / 60;
+        int minutes = n_min % 60;
+        cout << setfill('0') << setw(2) << hours << ":" << setfill('0') << setw(2) << minutes;
     }
 
     static bool test(clck_t c) {
@@ -155,8 +178,35 @@ public:
         return flag;
     }
 
-    string solve() {
+    void solve() {
+        // Mask: 1 if the corresponding clock segment was ever turned on (guaranteed to be working)
+        clck_t mask = 0;
+        for (clck_t c : this->clock_observations)
+            mask |= c;
 
+        for (size_t i = 0; i < clock_observations.size(); ++i)
+            generateAndTest(clock_observations[i], 27, mask, i);
+
+        vector<int> valid_times;
+        for (const auto & p : this->candidate_sols) {
+            if (p.second == (int) clock_observations.size())
+                valid_times.push_back(p.first);
+        }
+
+        // Sort times through time (not lexicographically)
+        sort(valid_times.begin(), valid_times.end());
+
+        // If no valid solutions are found
+        if (valid_times.empty()) {
+            cout << "none" << endl;
+            return;
+        }
+
+        // Else, print valid solutions
+        for (int t : valid_times) {
+            printTimeInMins(t);
+            cout << endl;
+        }
     }
 };
 
@@ -166,7 +216,8 @@ int main() {
     uint num_cases;
     cin >> num_cases;
     for (uint i = 0; i < num_cases; ++i) {
-        cout << "Case #" << i + 1 << ": " << TestCase(cin).solve() << endl;
+        cout << "Case #" << i + 1 << ":" << endl;
+        TestCase(cin).solve();
     }
 
     return EXIT_SUCCESS;
