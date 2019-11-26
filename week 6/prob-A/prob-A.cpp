@@ -143,22 +143,15 @@ public:
 
     bool generateAndTest(clck_t c, int bit_idx, clck_t mask, int min_offset) {
         // Base case -- no more changes can be made to the clock
-        if (bit_idx == -1){
-            if ( test(c) ){
-                int n_minutes = clockToMinutes(c);
-                if (min_offset == 0) {
-                    candidate_sols.insert(make_pair(n_minutes, 1));
-                } else {
-                    int base_time = n_minutes - min_offset;
-                    if (base_time < 0)
-                        base_time += 24*60;
-                    auto iter = candidate_sols.find(base_time);
-                    if (iter != candidate_sols.end())
-                        candidate_sols[iter->first] = iter->second + 1;
-                }
-                return true;
+        if (bit_idx == -1) {
+            bool valid = test(c);
+            if (valid) {
+                int t_mins = clockToMinutes(c) - min_offset;
+                if (t_mins < 0)
+                    t_mins += 24 * 60;
+                candidate_sols[t_mins] += 1;
             }
-            return false;
+            return valid;
         }
 
         if ((c >> bit_idx) & 1) // this bit is set
@@ -168,7 +161,6 @@ public:
             return generateAndTest(c, bit_idx - 1, mask, min_offset);
 
         bool flag = false;
-
         c = c | (1 << bit_idx);
         flag = generateAndTest(c, bit_idx - 1, mask, min_offset) || flag;
 
