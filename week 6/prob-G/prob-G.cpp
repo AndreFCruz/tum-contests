@@ -14,7 +14,7 @@ class TestCase {
     int width, depth;
     vector< vector<char> > map;
 
-    int n_tools;
+    int n_tools = 0;
     pair<int, int> lea_pos;
 
 public:
@@ -51,39 +51,38 @@ public:
         }
     }
 
-    bool generate_and_test_aux(const vector<vector<char>>& map, vector<vector<bool>>& used, int old_row, int old_col, int grabbed_tools, int next_row, int next_col) {
-        assert(old_row >= 0 and old_row < depth and old_col >= 0 and old_col < width);
+    bool generate_and_test_aux(const vector<vector<char>>& map, vector<vector<bool>>& used, int next_row, int next_col, int grabbed_tools) {
         assert(next_row >= 0 and next_row < depth and next_col >= 0 and next_col < width);
 
         if (!used[next_row][next_col] and map[next_row][next_col] != NON_WALKABLE) {
-            used[old_row][old_col] = true;  // used
+            used[next_row][next_col] = true;  // used
             if (generate_and_test(map, used, next_row, next_col, grabbed_tools + (map[next_row][next_col] == TOOL ? 1 : 0)))
                 return true;
-            used[old_row][old_col] = false; // unused
+            used[next_row][next_col] = false; // unused
         }
         return false;
     }
 
     bool generate_and_test(const vector<vector<char>>& map, vector<vector<bool>>& used, int lea_row, int lea_col, int grabbed_tools) {
         if (grabbed_tools == this->n_tools) {
-            print_board(map, used);
+//            print_board(map, used);
             return true; // No need for testing candidate solution as all paths are appropriately pruned thus far
         }
 
         // Move upwards
-        if (lea_row - 1 >= 0 and generate_and_test_aux(map, used, lea_row, lea_col, grabbed_tools, lea_row - 1, lea_col))
+        if (lea_row - 1 >= 0 and generate_and_test_aux(map, used, lea_row - 1, lea_col, grabbed_tools))
             return true;
 
         // Move downwards
-        if (lea_row + 1 < this->depth and generate_and_test_aux(map, used, lea_row, lea_col, grabbed_tools, lea_row + 1, lea_col))
+        if (lea_row + 1 < this->depth and generate_and_test_aux(map, used, lea_row + 1, lea_col, grabbed_tools))
             return true;
 
         // Move leftwards
-        if (lea_col - 1 >= 0 and generate_and_test_aux(map, used, lea_row, lea_col, grabbed_tools, lea_row, lea_col - 1))
+        if (lea_col - 1 >= 0 and generate_and_test_aux(map, used, lea_row, lea_col - 1, grabbed_tools))
             return true;
 
         // Move rightwards
-        if (lea_col + 1 < this->width and generate_and_test_aux(map, used, lea_row, lea_col, grabbed_tools, lea_row, lea_col + 1))
+        if (lea_col + 1 < this->width and generate_and_test_aux(map, used, lea_row, lea_col + 1, grabbed_tools))
             return true;
 
         return false;
@@ -91,6 +90,8 @@ public:
 
     string solve() {
         vector<vector<bool>> used(this->depth, vector<bool>(this->width, false));
+        used[lea_pos.first][lea_pos.second] = true;
+
         return generate_and_test(this->map, used, this->lea_pos.first, this->lea_pos.second, 0) ? "yes" : "no";
     }
 };
