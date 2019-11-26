@@ -87,7 +87,7 @@ public:
             mt = charToDigit.at(mt);
             mu = charToDigit.at(mu);
 
-            clock_observations.push_back(((clck_t) mu) + ((clck_t) mu << 7u) + ((clck_t) hu << 14u) + ((clck_t) ht << 21u));
+            clock_observations.push_back( ((clck_t) mu) + ((clck_t) mt << 7u) + ((clck_t) hu << 14u) + ((clck_t) ht << 21u) );
         }
         in.ignore(); // ignore last new-line
     }
@@ -123,7 +123,14 @@ public:
         cout << setfill('0') << setw(2) << hours << ":" << setfill('0') << setw(2) << minutes;
     }
 
-    static bool test(clck_t c) {
+    bool test(clck_t c) {
+//        try {
+//            string s = clockToString(c);
+//            cout << "-> " << s << endl;
+//        } catch (exception &e) {
+////            cout << "-> inv\n";
+//        }
+
         uint8_t hd = (c << (32u - 28u)) >> 25u;
         uint8_t hu = (c << (32u - 21u)) >> 25u;
         uint8_t md = (c << (32u - 14u)) >> 25u;
