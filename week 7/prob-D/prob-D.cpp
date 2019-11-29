@@ -4,43 +4,43 @@
 #include <algorithm>
 #include <queue>
 
-typedef unsigned int uint;
+typedef unsigned long ulong;
 
 using namespace std;
 
 class TestCase {
-    uint n_trees;
-    uint n_saws;
-    vector<uint> times;
+    ulong n_trees;
+    ulong n_saws;
+    vector<ulong> times;
 
 public:
     explicit TestCase(istream& in) {
         in >> n_trees >> n_saws;
 
         times.resize(n_trees);
-        for (uint i = 0; i < n_trees; ++i) {
+        for (ulong i = 0; i < n_trees; ++i) {
             in >> times[i];
         }
     }
 
-    uint greedy_scheduling() {
+    ulong greedy_scheduling() {
         // 1. Order trees from largest to smallest
-        sort(times.begin(), times.end(), greater<uint>());
+        sort(times.begin(), times.end(), greater<ulong>());
 
         // 2. Attribute largest tree to the least busy saw
-        priority_queue<uint> pq_saws; // used time per saw
-        for (uint i = 0; i < this->n_saws; ++i)
+        priority_queue<ulong, vector<ulong>, greater<ulong>> pq_saws; // used time per saw
+        for (ulong i = 0; i < this->n_saws; ++i)
             pq_saws.push(0);
 
-        uint max_saw_time = 0;
+        ulong max_saw_time = 0;
 
-        for (uint i = 0; i < times.size(); ++i) {
-            int tree_time = times[i];
-            int saw_time = pq_saws.top();
+        for (ulong i = 0; i < times.size(); ++i) {
+            ulong tree_time = times[i];
+            ulong saw_time = pq_saws.top();
 
             // Increase key for this saw in max-heap
             pq_saws.pop();
-            int new_saw_time = saw_time + tree_time;
+            ulong new_saw_time = saw_time + tree_time;
             pq_saws.push(new_saw_time);
             if (new_saw_time > max_saw_time)
                 max_saw_time = new_saw_time;
@@ -57,9 +57,9 @@ public:
 int main() {
     std::ios_base::sync_with_stdio(false);
 
-    uint num_cases;
+    ulong num_cases;
     cin >> num_cases;
-    for (uint i = 0; i < num_cases; ++i) {
+    for (ulong i = 0; i < num_cases; ++i) {
         cout << "Case #" << i + 1 << ": " << TestCase(cin).solve() << endl;
     }
 
