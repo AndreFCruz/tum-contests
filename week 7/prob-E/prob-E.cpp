@@ -95,10 +95,10 @@ public:
         long best_score = numeric_limits<long>::min();
         vector<int> score_matrix(10);
         // Test all combination scores to maximize overall score
-        for (int a_score = 1; a_score <= MAX_SCORE; ++a_score) {
-            for (int c_score = 1; c_score <= MAX_SCORE; ++c_score) {
-                for (int t_score = 1; t_score <= MAX_SCORE; ++t_score) {
-                    for (int g_score = 1; g_score <= MAX_SCORE; ++g_score) {
+        for (int a_score = 0; a_score <= MAX_SCORE; ++a_score) {
+            for (int c_score = 0; c_score <= MAX_SCORE; ++c_score) {
+                for (int t_score = 0; t_score <= MAX_SCORE; ++t_score) {
+                    for (int g_score = 0; g_score <= MAX_SCORE; ++g_score) {
 
                         // Diagonal scores must be positive
                         score_matrix[0] = a_score;
