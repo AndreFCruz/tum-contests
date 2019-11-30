@@ -31,19 +31,18 @@ public:
     }
 
     /**
-     * Deterministic loacl search for Max-Cut approximation
-     * https://en.wikipedia.org/wiki/Maximum_cut#Approximation_algorithms
+
      * @param cities whether each city belongs to the 1st set or not
      * @return the new solution value
      */
-
     /**
-     *
-     * @param cities_first
-     * @param cities_second
-     * @param connections
-     * @param curr_value
-     * @return
+     * Deterministic local search for Max-Cut approximation
+     * https://en.wikipedia.org/wiki/Maximum_cut#Approximation_algorithms
+     * @param cities_first  first set of nodes/cities
+     * @param cities_second second set of nodes/cities
+     * @param connections   adjacency matrix for nodes (keeps track of live and cut edges)
+     * @param curr_value    old solution's value (previous number of cut edges)
+     * @return              new solution's value (number of cut edges)
      */
     int local_search(
             unordered_set<int>& cities_first,
@@ -72,7 +71,7 @@ public:
             if (connections_cut > max_connections_cut) {
                 max_connections_cut = connections_cut;
                 node_to_move = node;
-                break; // break at first improved solution found? or search for best solution?
+//                break; // break at first improved solution found? or search for best solution?
             }
         }
         if (max_connections_cut <= 0) return curr_value;
@@ -107,7 +106,7 @@ public:
         do {
             curr_sol = new_sol;
             new_sol = local_search(cities_first, cities_second, connections, 0);
-        } while (new_sol < curr_sol);
+        } while (new_sol > curr_sol);
 
         // Print solution
         for (int n : cities_first)
