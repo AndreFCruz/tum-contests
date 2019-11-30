@@ -19,6 +19,8 @@ struct CharPairHash {
 
 /**
  * BioScore from https://www.topcoder.com/community/data-science/data-science-tutorials/greedy-is-good/
+ * Claim: If we always give the highest possible score to the combination that has the most occurrences in the group,
+ *        we’ll obtain in the end the highest possible score for the entire group.
  */
 class TestCase {
     int n_human, n_mouse;
@@ -62,6 +64,12 @@ public:
 
     static long calc_homology_score(const vector<int> freqs, const vector<int> score) {
         assert(freqs.size() == score.size());
+        // Assert that score matrix is valid -- for debugging purposes only
+        int total_score = 0;
+        for (size_t i = 0; i < score.size(); ++i)
+            total_score += (i < 4 ? score[i] : score[i] * 2);
+        assert(total_score == 0);
+
         long sum = 0;
         for (size_t i = 0; i < freqs.size(); ++i)
             sum += freqs[i] * score[i];
@@ -84,7 +92,7 @@ public:
         // (it doesn't matter which combination has a given frequency, only that it exists)
         sort(combinations.begin() + 4, combinations.end(), greater<int>());
 
-        long best_score = 0;
+        long best_score = numeric_limits<long>::min();
         vector<int> score_matrix(10);
         // Test all combination scores to maximize overall score
         for (int a_score = 1; a_score <= MAX_SCORE; ++a_score) {
@@ -97,6 +105,11 @@ public:
                         score_matrix[1] = c_score;
                         score_matrix[2] = t_score;
                         score_matrix[3] = g_score;
+
+                        // Score MUST be equal to 0, if this is not possible solution is not valid
+                        // all other scores (non-diagonal) are even, as they appear twice in the square scoring matrix
+                        if ((score_matrix[0] + score_matrix[1] + score_matrix[2] + score_matrix[3]) % 2 != 0)
+                            continue;
 
                         // Remaining scores should maximize similarity between human and mouse DNA
                         // such that sum of all entries equals 0
