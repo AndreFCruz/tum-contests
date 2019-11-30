@@ -31,11 +31,6 @@ public:
     }
 
     /**
-
-     * @param cities whether each city belongs to the 1st set or not
-     * @return the new solution value
-     */
-    /**
      * Deterministic local search for Max-Cut approximation
      * https://en.wikipedia.org/wiki/Maximum_cut#Approximation_algorithms
      * @param cities_first  first set of nodes/cities
@@ -71,7 +66,7 @@ public:
             if (connections_cut > max_connections_cut) {
                 max_connections_cut = connections_cut;
                 node_to_move = node;
-//                break; // break at first improved solution found? or search for best solution?
+//                break; // break at first improved solution found? or search for best improvement?
             }
         }
         if (max_connections_cut <= 0) return curr_value;
@@ -105,7 +100,7 @@ public:
         int curr_sol, new_sol = 0;
         do {
             curr_sol = new_sol;
-            new_sol = local_search(cities_first, cities_second, connections, 0);
+            new_sol = local_search(cities_first, cities_second, connections, curr_sol);
         } while (new_sol > curr_sol);
 
         // Print solution
