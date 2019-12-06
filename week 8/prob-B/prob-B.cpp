@@ -6,6 +6,9 @@
 #include <limits>
 #include <queue>
 
+// Longest Common Subsequence Problem
+// https://en.wikipedia.org/wiki/Longest_common_subsequence_problem
+
 using namespace std;
 
 
@@ -13,6 +16,10 @@ class TestCase {
 public:
     explicit TestCase(istream& in) {
 
+    }
+
+    string solve() {
+        return "...";
     }
 };
 
