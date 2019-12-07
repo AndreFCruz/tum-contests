@@ -54,6 +54,29 @@ public:
         });
     }
 
+    static int max_height_bottom_up(const vector<Case>& cases) {
+
+        // Keeps current maximum stack height for stacks ending in case i
+        vector<int> msh(cases.size());
+        for (size_t i = 0; i < msh.size(); ++i)
+            msh[i] = cases[i].z;
+
+        // Compute optimized msh values in bottom up manner
+        for (size_t i = 1; i < cases.size(); ++i) {
+            for (size_t j = 0; j < i; ++j) {
+                if (cases[i].x < cases[j].x and cases[i].y < cases[j].y and msh[i] < msh[j] + cases[i].z)
+                    msh[i] = msh[j] + cases[i].z;
+            }
+        }
+
+
+        /* Pick maximum of all msh values */
+        int best = -1;
+        for (size_t i = 0; i < cases.size(); ++i)
+            if (best < msh[i]) best = msh[i];
+        return best;
+    }
+
     /**
      * Finds the maximum height of a stack ending in box c_idx
      * @param c_idx the index of the current case to use
@@ -78,13 +101,15 @@ public:
     }
 
     string solve() {
-        vector<int> cache(cases.size(), -1);
-        max_height(cases.size() - 1, cases, cache);
+//        vector<int> cache(cases.size(), -1);
+//        max_height(cases.size() - 1, cases, cache);
+//
+//        for (int msh : cache) {
+//            if (msh >= this->height) return "yes";
+//        }
+//        return "no";
 
-        for (int msh : cache) {
-            if (msh >= this->height) return "yes";
-        }
-        return "no";
+        return max_height_bottom_up(this->cases) >= this->height ? "yes" : "no";
     }
 };
 
