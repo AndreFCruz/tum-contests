@@ -2,9 +2,6 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
-#include <map>
-#include <limits>
-#include <queue>
 
 // Stacking Boxes
 // http://www.geeksforgeeks.org/dynamic-programming-set-21-box-stacking-problem/
@@ -13,30 +10,9 @@ using namespace std;
 
 struct Case {
     int x, y, z;
-    int used = 0;
 
     Case() = default;
     Case(int x, int y, int z) : x(x), y(y), z(z) {}
-
-    /**
-     * Position 0: (x,y,z)
-     * Position 1: (y,z,x)
-     * Position 2: (z,x,y)
-     * @param pos position of the box
-     * @return the horizontally-projected dimensions of the box
-     */
-//    tuple<int, int, int> get_dims(int pos = 0) {
-//        switch (pos) {
-//            case 0:
-//                return make_tuple(x, y, z);
-//            case 1:
-//                return make_tuple(y, z, x);
-//            case 2:
-//                return make_tuple(z, x, y);
-//            default:
-//                throw invalid_argument("pos in {0,1,2}");
-//        }
-//    }
 };
 
 class TestCase {
@@ -50,18 +26,25 @@ public:
 
         cases.resize(n_case_types * 3);
         for (int i = 0; i < n_case_types * 3; i += 3) {
+            Case aux;
+            in >> aux.x >> aux.y >> aux.z;
+            // NOTE: for simplicity always keep x > y
+            // if 2 boxes stack can stack, then aligning x with their largest length will keep this property
+
             // 1st rotation: (x,y,z)
-            in >> cases[i].x >> cases[i].y >> cases[i].z;
+            cases[i].x = max(aux.x, aux.y);
+            cases[i].y = min(aux.x, aux.y);
+            cases[i].z = aux.z;
 
             // 2nd rotation: (y,z,x)
-            cases[i+1].x = cases[i].y;
-            cases[i+1].y = cases[i].z;
-            cases[i+1].z = cases[i].x;
+            cases[i+1].x = max(aux.y, aux.z);
+            cases[i+1].y = min(aux.y, aux.z);
+            cases[i+1].z = aux.x;
 
             // 3rd rotation: (z,x,y)
-            cases[i+1].x = cases[i].z;
-            cases[i+1].y = cases[i].x;
-            cases[i+1].z = cases[i].y;
+            cases[i+2].x = max(aux.z, aux.x);
+            cases[i+2].y = min(aux.z, aux.x);
+            cases[i+2].z = aux.y;
         }
 
         // Sort by decreasing base area
