@@ -3,11 +3,8 @@
 #include <cassert>
 #include <algorithm>
 #include <map>
-#include <limits>
-#include <queue>
 
-class Tournament {
-public:
+struct Tournament {
     int64_t start;
     int64_t end;
     int64_t prize;
@@ -33,13 +30,15 @@ public:
     }
 
     static int64_t solve_aux_dp(int64_t t, map<int64_t, vector<Tournament>> &tournaments, vector<int64_t> &cache) {
-        if (cache[t] > 0) return cache[t];
-        if (t == 0) return 0;
+        if (cache[t] > 0) return cache[t]; // value already cached
+        if (t == 0) return 0;   // base case; t=0, there are no tournaments to play
 
+        // current max is the maximum obtained at the previous time step
         int64_t currentMax = solve_aux_dp(t - 1, tournaments, cache);
         cache[t] = currentMax;
 
         for (auto tournament : tournaments[t]) {
+            // is playing this tournament better than the current max?
             currentMax = max(currentMax, tournament.prize + solve_aux_dp(tournament.start - 1, tournaments, cache));
             cache[t] = currentMax;
         }
