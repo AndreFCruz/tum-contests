@@ -2,7 +2,6 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
-#include <unordered_map>
 
 using namespace std;
 
@@ -19,38 +18,37 @@ public:
     }
 
     static int longest_common_subsequence(string a, string b) {
-        vector<vector<int>> dp(a.size() + 1, vector<int>(b.size() + 1));
+        vector<vector<int>> dp(a.size() + 1, vector<int>(b.size() + 1, 0));
 
         // classical LCS
         for (size_t a_i = 1; a_i <= a.size(); ++a_i) {
             for (size_t b_i = 1; b_i <= b.size(); ++b_i) {
-                if (a[a_i] == b[b_i])
+                if (a[a_i - 1] == b[b_i - 1])
                     dp[a_i][b_i] = dp[a_i - 1][b_i - 1] + 1;
                 else
                     dp[a_i][b_i] = max(dp[a_i - 1][b_i], dp[a_i][b_i - 1]);
             }
         }
-//        return dp.back().back();
-
-//        cout << endl;
-//        cout << endl;
-//        for (auto row : dp) {
-//            for (int val : row)
-//                cout << val << " ";
-//            cout << endl;
-//        }
-//        cout << endl;
-//        cout << endl;
+//        return dp.back().back();  // return here for original LCS problem
 
         // find largest difference of LCS for rotations of a and b
         int best = 0;
-        for (size_t i = 0; i < a.size() / 2; ++i) {
-            for (size_t j = 0; j < b.size() / 2; ++j) {
-                best = max(best, dp[i + ((a.size()+1) / 2)][j + ((b.size()+1) / 2)] - dp[i][j]);
+        size_t og_a = (a.size() + 1) / 2;
+        size_t og_b = (b.size() + 1) / 2;
+        for (size_t i = 1; i < og_a; ++i) {
+            for (size_t j = 1; j < og_b; ++j) {
+                int lcs_diff = dp[i + og_a][j + og_b] - dp[i][j];
+                best = max(best, lcs_diff);
                 // a and b will always be even-sized as they're each the concatenation of two equal strings
             }
         }
 
+        // also works:
+//        for ( int s_i = og_a + 1; s_i <= a.size(); ++s_i ){
+//            for ( int s_j = og_b + 1; s_j <= b.size(); ++s_j ){
+//                best = dp[s_i][s_j] - dp[s_i - og_a][s_j - og_b];
+//            }
+//        }
         return best;
     }
 
