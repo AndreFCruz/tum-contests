@@ -33,6 +33,7 @@ public:
             Tunnel t;
             in >> t.orig >> t.dest >> t.len;
             if (t.orig < t.dest) swap(t.orig, t.dest);
+            else if (t.orig == t.dest) continue;
 
             tunnels.insert(make_pair(t.orig, t));
         }
@@ -77,17 +78,30 @@ public:
         return dist;
     }
 
-    // Only works for acyclic graphs
-    static int value_of_node(const multimap<int, Tunnel>& edges, const vector<int>& objects, int target_node, vector<int>& cache) {
-        if (cache[target_node] != -1) return cache[target_node];
+    /**
+     * Only works for acyclic graphs.
+     * Executes DFS for the surface node, 0, and counts maximum number of collected objects along the way.
+     * @param edges
+     * @param objects
+     * @param target_node
+     * @param cache
+     * @return
+     */
+    static pair<int, bool> value_of_node(const multimap<int, Tunnel>& edges, const vector<int>& objects, int target_node, vector<pair<int,bool>>& cache) {
+        if (target_node == 0) return make_pair(0, true);            // base case
+        if (cache[target_node].first != -1) return cache[target_node];     // result already cached
 
-        int best = 0;
+        int best = 0; bool can_reach_surface = false;
         for (auto it = edges.equal_range(target_node); it.first != it.second; ++it.first) {
             Tunnel t = it.first->second;
-            best = max(best, value_of_node(edges, objects, t.dest, cache));
+            auto res = value_of_node(edges, objects, t.dest, cache);
+            if (res.second and res.first >= best) {
+                can_reach_surface = true;
+                best = res.first;
+            }
         }
 
-        cache[target_node] = objects[target_node] + best;
+        cache[target_node] = make_pair(objects[target_node] + best, can_reach_surface);
         return cache[target_node];
     }
 
@@ -122,22 +136,9 @@ public:
             }
         }
 
-        // Execute another dijkstra with current tunnels to check if surface is still reachable
-        lea_dist = dijkstra(tunnels, n_graves + 1, lea_grave);
-        if (lea_dist[0] == numeric_limits<int>::max()) return "impossible";
-
-        vector<int> cache(n_graves + 1, -1);
-
-        multimap<int, Tunnel> reverse_tunnels;
-        for (const auto& p : tunnels) {
-            Tunnel r;
-            r.len = p.second.len;
-            r.orig = p.second.dest;
-            r.dest = p.second.orig;
-            reverse_tunnels.insert(make_pair(r.orig, r));
-        }
-        int ans = value_of_node(reverse_tunnels, objects, 0, cache) - value_of_node(reverse_tunnels, objects, lea_grave, cache);
-        return to_string(ans);
+        vector<pair<int, bool>> cache(n_graves + 1, make_pair(-1, false));
+        auto ans = value_of_node(tunnels, objects, lea_grave, cache);
+        return ans.second ? to_string(ans.first) : "impossible";
 
         // Or use DP, in which the value of a node is its value + the maximum value of its connecting nodes
         // -> find value of surface node
