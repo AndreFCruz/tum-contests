@@ -35,20 +35,19 @@ public:
         int best = 0;
         size_t og_a = (a.size() + 1) / 2;
         size_t og_b = (b.size() + 1) / 2;
-        for (size_t i = 1; i < og_a; ++i) {
-            for (size_t j = 1; j < og_b; ++j) {
-                int lcs_diff = dp[i + og_a][j + og_b] - dp[i][j];
-                best = max(best, lcs_diff);
-                // a and b will always be even-sized as they're each the concatenation of two equal strings
-            }
-        }
-
-        // also works:
-//        for ( int s_i = og_a + 1; s_i <= a.size(); ++s_i ){
-//            for ( int s_j = og_b + 1; s_j <= b.size(); ++s_j ){
-//                best = dp[s_i][s_j] - dp[s_i - og_a][s_j - og_b];
+//        for (size_t i = 0; i < og_a; ++i) {
+//            for (size_t j = 0; j < og_b; ++j) {
+//                int lcs_diff = dp[i + og_a][j + og_b] - dp[i][j];
+//                best = max(best, lcs_diff);
+//                // a and b will always be even-sized as they're each the concatenation of two equal strings
 //            }
 //        }
+
+        size_t r = a.size(), c = b.size();
+        while (r-- > og_a and c-- > og_b) {
+            best = max(best, dp[r][c] - dp[r - og_a][c - og_b]);
+        }
+        
         return best;
     }
 
