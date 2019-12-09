@@ -124,7 +124,7 @@ public:
             vector<int>& cache)
     {
         if (target_node == 0) return time_elapsed < flea_times[0] ? 0 : -1;     // base case (surface reached)
-        if (cache[target_node] != -2) return cache[target_node];                // cached result
+        if (cache[target_node] != -2) return cache[target_node];                // cached result -- can this result be reused ?? RECHECK
 
         // For each neighbouring grave, get maximum if valid within constraints
         int best = -1;
@@ -136,6 +136,50 @@ public:
 
         cache[target_node] = best > -1 ? best + objects[target_node] : -1;
         return cache[target_node];
+    }
+
+    static int value_of_node_bottom_up(
+            int target_node,
+            const multimap<int, Tunnel>& edges_by_dest,
+            const vector<int>& objects,
+            const vector<int>& flea_times,
+            int n_nodes
+            )
+    {
+        vector<int> value_at_node(n_nodes, -1);
+        vector<int> time_at_node(n_nodes, -1);
+        vector<bool> visited(n_nodes, false);
+
+        // Surface node
+        value_at_node[0] = 0; time_at_node[0] = 0;
+
+        queue<int> nodes_to_explore;
+        nodes_to_explore.push(0);
+        while (! nodes_to_explore.empty()) {
+            int node = nodes_to_explore.front();
+            nodes_to_explore.pop();
+            visited[node] = true;
+
+            if (node == target_node)
+                return value_at_node[target_node];
+
+            // Get all nodes that lead to this node
+            for (auto it = edges_by_dest.equal_range(node); it.first != it.second; ++it.first) {
+                Tunnel t = it.first->second;
+                assert(node == t.dest);
+
+                if (!visited[t.orig] and \
+                    time_at_node[node] + t.len < flea_times[t.orig] and \
+                    value_at_node[node] + objects[t.orig] > value_at_node[t.orig])
+                {
+                    nodes_to_explore.push(t.orig);
+                    time_at_node[t.orig] = time_at_node[node] + t.len;
+                    value_at_node[t.orig] = value_at_node[node] + objects[t.orig];
+                }
+            }
+        }
+
+        return -1;
     }
 
     string solve() {
@@ -156,26 +200,18 @@ public:
         if (future_lea_dist[0] <= lea_dist[0])
             return "impossible"; // impossible to get to the surface before future Lea
 
-        vector<int> cache(n_graves + 1, -2);
-        int ans = value_of_node_constrained(lea_grave, 0, tunnels, objects, future_lea_dist, cache);
-        return to_string(ans);
+        // Index tunnels by destination node
+        multimap<int, Tunnel> tunnels_by_dest;
+        for (const auto& p : tunnels)
+            tunnels_by_dest.insert(make_pair(p.second.dest, p.second));
 
-//        for (int i = 1; i <= n_graves; ++i) {
-//            // If future Lea gets to this grave before Lea
-//            if (future_lea_dist[i] <= lea_dist[i]) {
-//                // Delete grave from graph
-//                for (auto it = tunnels.begin(); it != tunnels.end(); ) {
-//                    if (it->second.orig == i or it->second.dest == i)
-//                        it = tunnels.erase(it);
-//                    else
-//                        ++it;
-//                }
-//            }
-//        }
-//
-//        vector<pair<int, bool>> cache(n_graves + 1, make_pair(-1, false));
-//        auto ans = value_of_node(lea_grave, tunnels, objects, cache);
-//        return ans.second ? to_string(ans.first) : "impossible";
+        int ans = value_of_node_bottom_up(lea_grave, tunnels_by_dest, objects, future_lea_dist, n_graves + 1);
+        return ans >= 0 ? to_string(ans) : "impossible";
+
+        // Code for solving problem with value_of_node_constrained
+//        vector<int> cache(n_graves + 1, -2);
+//        int ans = value_of_node_constrained(lea_grave, 0, tunnels, objects, future_lea_dist, cache);
+//        return to_string(ans);
 
         // Or use DP, in which the value of a node is its value + the maximum value of its connecting nodes
         // -> find value of surface node
