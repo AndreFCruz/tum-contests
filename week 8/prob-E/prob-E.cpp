@@ -78,67 +78,81 @@ public:
         return dist;
     }
 
+//    /**
+//     * NOTE: OUTDATED SOLUTION
+//     * Only works for acyclic graphs.
+//     * Executes DFS for the surface node, 0, and counts maximum number of collected objects along the way.
+//     * @param target_node the queried node
+//     * @param edges edges of the graph (tunnels)
+//     * @param objects objects at each grave
+//     * @param cache previous answers cached
+//     * @return pair<maximum objects collected: int, can reach the surface: bool>
+//     */
+//    static pair<int, bool> value_of_node(int target_node, const multimap<int, Tunnel>& edges, const vector<int>& objects, vector<pair<int,bool>>& cache) {
+//        if (target_node == 0) return make_pair(0, true);            // base case
+//        if (cache[target_node].first != -1) return cache[target_node];     // result already cached
+//
+//        int best = 0; bool can_reach_surface = false;
+//        for (auto it = edges.equal_range(target_node); it.first != it.second; ++it.first) {
+//            Tunnel t = it.first->second;
+//            auto res = value_of_node(t.dest, edges, objects, cache);
+//            if (res.second and res.first >= best) {
+//                can_reach_surface = true;
+//                best = res.first;
+//            }
+//        }
+//
+//        cache[target_node] = make_pair(objects[target_node] + best, can_reach_surface);
+//        return cache[target_node];
+//    }
+
+//    /**
+//     * NOTE: OUTDATED SOLUTION
+//     * Same as previous function but constrained for only choosing nodes which future Lea hasn't reached yet.
+//     * @param target_node the queried node
+//     * @param time_elapsed time passed since beginning of path
+//     * @param edges edges of the graph (tunnels)
+//     * @param objects objects in each grave
+//     * @param flea_times node distances for future Lea
+//     * @param cache cache of already computed results (memoized)
+//     * @return the maximum number of objects Lea can get, or -1 if impossible
+//     */
+//    static int value_of_node_constrained(
+//            int target_node,
+//            int time_elapsed,
+//            const multimap<int, Tunnel>& edges,
+//            const vector<int>& objects,
+//            const vector<int>& flea_times,
+//            vector<int>& cache)
+//    {
+//        if (target_node == 0) return time_elapsed < flea_times[0] ? 0 : -1;     // base case (surface reached)
+//        if (cache[target_node] != -2) return cache[target_node];                // cached result -- can this result be reused ?? RECHECK
+//
+//        // For each neighbouring grave, get maximum if valid within constraints
+//        int best = -1;
+//        for (auto it = edges.equal_range(target_node); it.first != it.second; ++it.first) {
+//            Tunnel t = it.first->second;
+//            if (time_elapsed + t.len < flea_times[t.dest]) // Lea can take this path
+//                best = max(best, value_of_node_constrained(t.dest, time_elapsed + t.len, edges, objects, flea_times, cache));
+//        }
+//
+//        cache[target_node] = best > -1 ? best + objects[target_node] : -1;
+//        return cache[target_node];
+//    }
+
     /**
-     * Only works for acyclic graphs.
-     * Executes DFS for the surface node, 0, and counts maximum number of collected objects along the way.
-     * @param target_node the queried node
-     * @param edges edges of the graph (tunnels)
-     * @param objects objects at each grave
-     * @param cache previous answers cached
-     * @return pair<maximum objects collected: int, can reach the surface: bool>
+     * Solves "Escaping the Paradox" in a bottom-up manner, starting from the surface node 0.
+     * Keeps 3D dynamic-programming matrix/map of cached results.
+     * @param start_node
+     * @param target_node
+     * @param edges_by_dest
+     * @param objects
+     * @param flea_times
+     * @param n_nodes
+     * @return
      */
-    static pair<int, bool> value_of_node(int target_node, const multimap<int, Tunnel>& edges, const vector<int>& objects, vector<pair<int,bool>>& cache) {
-        if (target_node == 0) return make_pair(0, true);            // base case
-        if (cache[target_node].first != -1) return cache[target_node];     // result already cached
-
-        int best = 0; bool can_reach_surface = false;
-        for (auto it = edges.equal_range(target_node); it.first != it.second; ++it.first) {
-            Tunnel t = it.first->second;
-            auto res = value_of_node(t.dest, edges, objects, cache);
-            if (res.second and res.first >= best) {
-                can_reach_surface = true;
-                best = res.first;
-            }
-        }
-
-        cache[target_node] = make_pair(objects[target_node] + best, can_reach_surface);
-        return cache[target_node];
-    }
-
-    /**
-     * Same as previous function but constrained for only choosing nodes which future Lea hasn't reached yet.
-     * @param target_node the queried node
-     * @param time_elapsed time passed since beginning of path
-     * @param edges edges of the graph (tunnels)
-     * @param objects objects in each grave
-     * @param flea_times node distances for future Lea
-     * @param cache cache of already computed results (memoized)
-     * @return the maximum number of objects Lea can get, or -1 if impossible
-     */
-    static int value_of_node_constrained(
-            int target_node,
-            int time_elapsed,
-            const multimap<int, Tunnel>& edges,
-            const vector<int>& objects,
-            const vector<int>& flea_times,
-            vector<int>& cache)
-    {
-        if (target_node == 0) return time_elapsed < flea_times[0] ? 0 : -1;     // base case (surface reached)
-        if (cache[target_node] != -2) return cache[target_node];                // cached result -- can this result be reused ?? RECHECK
-
-        // For each neighbouring grave, get maximum if valid within constraints
-        int best = -1;
-        for (auto it = edges.equal_range(target_node); it.first != it.second; ++it.first) {
-            Tunnel t = it.first->second;
-            if (time_elapsed + t.len < flea_times[t.dest]) // Lea can take this path
-                best = max(best, value_of_node_constrained(t.dest, time_elapsed + t.len, edges, objects, flea_times, cache));
-        }
-
-        cache[target_node] = best > -1 ? best + objects[target_node] : -1;
-        return cache[target_node];
-    }
-
     static int value_of_node_bottom_up(
+            int start_node,
             int target_node,
             const multimap<int, Tunnel>& edges_by_dest,
             const vector<int>& objects,
@@ -152,10 +166,10 @@ public:
         vector<bool> visited(n_nodes, false);
 
         // Surface node
-        dp.insert(make_pair(0, make_pair(0, 0))); // dp[0] = <0, 0>
+        dp.insert(make_pair(start_node, make_pair(objects[start_node], 0))); // dp[0] = <0, 0>
 
         queue<int> nodes_to_explore;
-        nodes_to_explore.push(0);
+        nodes_to_explore.push(start_node);
         while (! nodes_to_explore.empty()) {
             int node = nodes_to_explore.front();
             nodes_to_explore.pop();
@@ -167,10 +181,10 @@ public:
                 return max_element(p.first, p.second)->second.first;
             }
 
-            // Get all nodes that lead to this node
+            // Get all neighboring nodes
             for (auto it_outer = edges_by_dest.equal_range(node); it_outer.first != it_outer.second; ++it_outer.first) {
                 Tunnel t = it_outer.first->second;
-                assert(node == t.dest);
+                assert(node == t.orig);
 
                 // For every pair <value, time> for this node
                 vector<tuple<int,int,int>> to_add;
@@ -180,10 +194,10 @@ public:
                     int time_at_node = p.first->second.second;
                     assert(time_at_node < flea_times[node]);
 
-                    if (!visited[t.orig] and time_at_node + t.len < flea_times[t.orig])
+                    if (!visited[t.dest] and time_at_node + t.len < flea_times[t.dest])
                     {
-                        nodes_to_explore.push(t.orig);
-                        to_add.emplace_back(t.orig, value_at_node + objects[t.orig], time_at_node + t.len);
+                        nodes_to_explore.push(t.dest);
+                        to_add.emplace_back(t.dest, value_at_node + objects[t.dest], time_at_node + t.len);
                     }
                 }
 
@@ -193,6 +207,8 @@ public:
             }
         }
 
+//        auto p = dp.equal_range(target_node);
+//        return dp.count(target_node) > 0 ? max_element(p.first, p.second)->second.first : -1;
         return -1;
     }
 
@@ -214,25 +230,8 @@ public:
         if (future_lea_dist[0] <= lea_dist[0])
             return "impossible"; // impossible to get to the surface before future Lea
 
-        // Index tunnels by destination node
-        multimap<int, Tunnel> tunnels_by_dest;
-        for (const auto& p : tunnels)
-            tunnels_by_dest.insert(make_pair(p.second.dest, p.second));
-
-        int ans = value_of_node_bottom_up(lea_grave, tunnels_by_dest, objects, future_lea_dist, n_graves + 1);
+        int ans = value_of_node_bottom_up(lea_grave, 0, tunnels, objects, future_lea_dist, n_graves + 1);
         return ans >= 0 ? to_string(ans) : "impossible";
-
-        // Code for solving problem with value_of_node_constrained
-//        vector<int> cache(n_graves + 1, -2);
-//        int ans = value_of_node_constrained(lea_grave, 0, tunnels, objects, future_lea_dist, cache);
-//        return to_string(ans);
-
-        // Or use DP, in which the value of a node is its value + the maximum value of its connecting nodes
-        // -> find value of surface node
-
-        // Maximize objects carried to the surface
-        // Set gain (opposite of cost) of an edge to the number of objects in its destination grave
-        // Use Dijkstra to find the maximum cost path
     }
 };
 
