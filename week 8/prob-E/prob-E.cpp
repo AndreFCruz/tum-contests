@@ -146,36 +146,50 @@ public:
             int n_nodes
             )
     {
-        vector<int> value_at_node(n_nodes, -1);
-        vector<int> time_at_node(n_nodes, -1);
+        // NOTE 3D DP matrix of dimensions <node, time, value>
+        multimap<int, pair<int, int>> dp;  // dp[node] = <value, time>
+//        vector<vector<int>> dp(n_nodes, vector<int>(flea_times[0])); // max-time: flea_time[surface_node]
         vector<bool> visited(n_nodes, false);
 
         // Surface node
-        value_at_node[0] = 0; time_at_node[0] = 0;
+        dp.insert(make_pair(0, make_pair(0, 0))); // dp[0] = <0, 0>
 
         queue<int> nodes_to_explore;
         nodes_to_explore.push(0);
         while (! nodes_to_explore.empty()) {
             int node = nodes_to_explore.front();
             nodes_to_explore.pop();
+            if (visited[node]) continue;
             visited[node] = true;
 
-            if (node == target_node)
-                return value_at_node[target_node];
+            if (node == target_node) {
+                auto p = dp.equal_range(node);
+                return max_element(p.first, p.second)->second.first;
+            }
 
             // Get all nodes that lead to this node
-            for (auto it = edges_by_dest.equal_range(node); it.first != it.second; ++it.first) {
-                Tunnel t = it.first->second;
+            for (auto it_outer = edges_by_dest.equal_range(node); it_outer.first != it_outer.second; ++it_outer.first) {
+                Tunnel t = it_outer.first->second;
                 assert(node == t.dest);
 
-                if (!visited[t.orig] and \
-                    time_at_node[node] + t.len < flea_times[t.orig] and \
-                    value_at_node[node] + objects[t.orig] > value_at_node[t.orig])
-                {
-                    nodes_to_explore.push(t.orig);
-                    time_at_node[t.orig] = time_at_node[node] + t.len;
-                    value_at_node[t.orig] = value_at_node[node] + objects[t.orig];
+                // For every pair <value, time> for this node
+                vector<tuple<int,int,int>> to_add;
+                for (auto p = dp.equal_range(node); p.first != p.second; ++p.first) {
+                    assert(node == p.first->first);
+                    int value_at_node = p.first->second.first;
+                    int time_at_node = p.first->second.second;
+                    assert(time_at_node < flea_times[node]);
+
+                    if (!visited[t.orig] and time_at_node + t.len < flea_times[t.orig])
+                    {
+                        nodes_to_explore.push(t.orig);
+                        to_add.emplace_back(t.orig, value_at_node + objects[t.orig], time_at_node + t.len);
+                    }
                 }
+
+                // Insert all collected pairs
+                for (const auto& tup : to_add)
+                    dp.insert(make_pair(get<0>(tup), make_pair(get<1>(tup), get<2>(tup))));
             }
         }
 
