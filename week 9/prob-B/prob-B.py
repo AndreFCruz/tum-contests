@@ -3,7 +3,6 @@ Week 9 - Prob B - Finding the modular inverse.
 """
 
 import sys
-import math
 
 
 def extended_gcd(aa, bb):
