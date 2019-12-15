@@ -11,7 +11,7 @@ typedef unsigned int uint;
 
 using namespace std;
 
-// Largest common divisor between a list of numbers
+// Greatest common divisor between a list of numbers
 
 class TestCase {
     vector<uint> nums;
@@ -26,28 +26,26 @@ public:
             in >> nums[i];
     }
 
-    static uint lgd(vector<uint>& nums) {
-        uint min_num = *min(nums.begin(), nums.end());
-
-        uint max_div = 1;
-        for (uint i = 1; i <= min_num; ++i) {
-            bool all_dividable = true;
-            for (uint n : nums) {
-                if (n % i != 0) {
-                    all_dividable = false;
-                    break;
-                }
-            }
-
-            if (all_dividable)
-                max_div = i;
+    static uint gcd(uint a,uint b) {
+        uint temp;
+        while(b > 0) {
+            temp = b;
+            b = a % b;
+            a = temp;
         }
+        return a;
+    }
 
-        return max_div;
+    static uint gcd(const vector<uint>& nums) {
+        uint result = nums[0];
+        for (size_t i = 1; i < nums.size(); ++i)
+            result = gcd(result, nums[i]);
+
+        return result;
     }
 
     string solve() {
-        return to_string(lgd(nums));
+        return to_string(gcd(nums));
     }
 };
 
