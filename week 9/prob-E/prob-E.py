@@ -45,7 +45,7 @@ def solve_test_case():
 
     return \
         '0/1' if goal_prob.numerator == 0 else \
-        '1/1' if goal_prob.numerator == 1 else \
+        '1/1' if goal_prob.denominator == 1 else \
         str(goal_prob)
 
 
