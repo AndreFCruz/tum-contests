@@ -7,10 +7,12 @@
 #include <queue>
 #include <cmath>
 
+#define MAX_ERROR   1e-8
+
 using namespace std;
 
 
-// Push-Relabel Max-Flow Algorithm from https://codeforces.com/blog/entry/14378
+// Push-Relabel Max-Flow Algorithm (adapted) from https://codeforces.com/blog/entry/14378
 /*
     Implementation of highest-label push-relabel maximum flow
     with gap relabeling heuristic.
@@ -49,7 +51,7 @@ template <class T> struct PushRelabel {
 
     PushRelabel (int n): n(n), adj(n) {}
 
-    void AddEdge (int from, int to, int cap) {
+    void AddEdge (int from, int to, T cap) {
         adj[from].push_back(Edge <T>(from, to, cap, 0, adj[to].size()));
         if (from == to) {
             adj[from].back().index++;
@@ -89,7 +91,7 @@ template <class T> struct PushRelabel {
     void Relabel (int v) {
         count[dist[v]]--;
         dist[v] = n;
-        for (auto e: adj[v]) if (e.cap - e.flow > 0) {
+        for (auto e: adj[v]) if (e.cap - e.flow > MAX_ERROR) {
                 dist[v] = min(dist[v], dist[e.to] + 1);
             }
         count[dist[v]]++;
@@ -98,14 +100,14 @@ template <class T> struct PushRelabel {
 
     void Discharge(int v) {
         for (auto &e: adj[v]) {
-            if (excess[v] > 0) {
+            if (excess[v] > MAX_ERROR) {
                 Push(e);
             } else {
                 break;
             }
         }
 
-        if (excess[v] > 0) {
+        if (excess[v] > MAX_ERROR) {
             if (count[dist[v]] == 1) {
                 Gap(dist[v]);
             } else {
@@ -174,7 +176,7 @@ public:
 
     void solve() {
         double res = pr->GetMaxFlow(1, this->n_valves);
-        if (res < 1e-8)
+        if (res < MAX_ERROR)
             cout << "impossible";
         else
             cout << setprecision(16) << res;
