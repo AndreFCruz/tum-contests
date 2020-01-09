@@ -1,5 +1,6 @@
 """
 Week 11 - Problem A - Contact List
+- Trie
 """
 
 import sys
