@@ -11,6 +11,7 @@ MAX = 10 ** 6 + 1
 tree = [0] * MAX  # To store segment tree
 lazy = [0] * MAX  # To store pending updates
 
+
 """ si -> index of current node in segment tree 
 	ss and se -> Starting and ending indexes of elements 
 				for which current nodes stores sum. 
@@ -88,6 +89,7 @@ def updateRangeUtil(si, ss, se, us, ue, diff) :
 def updateRange(n, us, ue, diff) : 
 	updateRangeUtil(0, 0, n - 1, us, ue, diff)
 
+
 ''' A recursive function to get the sum of values 
 	in given range of the array. The following are 
 	parameters for this function. 
@@ -146,6 +148,7 @@ def getSumUtil(ss, se, qs, qe, si) :
 	return (getSumUtil(ss, mid, qs, qe, 2 * si + 1) +
 			getSumUtil(mid + 1, se, qs, qe, 2 * si + 2))
 
+
 # Return sum of elements in range from 
 # index qs (query start) to qe (query end). 
 # It mainly uses getSumUtil() 
@@ -186,42 +189,21 @@ def constructSTUtil(arr, ss, se, si) :
 
 	tree[si] = tree[si * 2 + 1] + tree[si * 2 + 2]
 
+
 ''' Function to construct segment tree 
 from given array. This function allocates memory 
 for segment tree and calls constructSTUtil() 
 to fill the allocated memory '''
 def constructST(arr, n) : 
-	
 	# Fill the allocated memory st 
 	constructSTUtil(arr, 0, n - 1, 0)
-	
-# Driver Code 
-if __name__ == "__main__" : 
-
-	arr = [1, 3, 5, 7, 9, 11]
-	n = len(arr)
-
-	# Build segment tree from given array 
-	constructST(arr, n)
-
-	# Print sum of values in array from index 1 to 3 
-	print("Sum of values in given range =", 
-						getSum(n, 1, 3))
-
-	# Add 10 to all nodes at indexes from 1 to 5. 
-	updateRange(n, 1, 5, 10)
-
-	# Find sum after the value is updated 
-	print("Updated sum of values in given range =", 
-								getSum( n, 1, 3))
-
-# This code is contributed by AnkitRai01 
 
 
 def solve_test_case():
   n_glasses, k_queries = map(int, sys.stdin.readline().rstrip().split(' '))
   queries = [sys.stdin.readline().rstrip().split(' ') for _ in range(k_queries)]
 
+  n_glasses += 1
   st = [0] * n_glasses  # segment tree
   constructST(st, n_glasses)
 
