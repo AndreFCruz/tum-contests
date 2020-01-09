@@ -217,7 +217,8 @@ def solve_test_case():
       l, r, v = map(int, q[1:])
       updateRange(n_glasses, l, r, v)
     else:
-      raise ValueError('Invalid argument for query "{}"'.format(q[0]))
+      # raise ValueError('Invalid argument for query "{}"'.format(q[0]))
+      print('Invalid argument for query "{}"'.format(q[0]))
 
   return answer % 1000000007
 
