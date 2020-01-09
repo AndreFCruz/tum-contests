@@ -45,5 +45,6 @@
         "tuple": "cpp",
         "fstream": "cpp",
         "unordered_set": "cpp"
-    }
+    },
+    "python.pythonPath": "/Users/andre/.pyenv/shims/python3"
 }

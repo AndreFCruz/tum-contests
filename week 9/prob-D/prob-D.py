@@ -17,7 +17,7 @@ def extended_gcd(aa, bb):
 
 def modinv(a, m):
     """From: https://rosettacode.org/wiki/Modular_inverse#Iteration_and_error-handling"""
-    g, x, y = extended_gcd(a, m)
+    g, x, _ = extended_gcd(a, m)
     if g != 1:
         raise ValueError
     return x % m
