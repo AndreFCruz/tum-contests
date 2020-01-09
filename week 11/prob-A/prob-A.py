@@ -3,7 +3,7 @@ Week 11 - Problem A - Contact List
 """
 
 import sys
-from queue import SimpleQueue
+from queue import Queue
 
 
 class TrieNode:
@@ -55,7 +55,7 @@ def solve_test_case():
   
   # Count number of intermediate nodes corresponding to word endings
   count = 0
-  q = SimpleQueue()
+  q = Queue()
   q.put_nowait(trie_root)
   while not q.empty():
     node = q.get_nowait()
