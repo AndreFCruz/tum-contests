@@ -124,8 +124,16 @@ public:
      * @param winner_starts the winner of round k begins in the round k+1
      */
     void solve(bool lea_begins, bool winner_starts) {
-        // TODO use arguments
-        if (minimax(trie_root, true))
+
+        bool lea_wins = minimax(trie_root, lea_begins);
+        for (int i = 1; i < n_rounds; ++i) {
+            if ((winner_starts and lea_wins) or (!winner_starts and !lea_wins))
+                lea_wins = minimax(trie_root, true);
+            else
+                lea_wins = minimax(trie_root, false);
+        }
+
+        if (lea_wins)
             cout << "victory\n";
         else
             cout << "defeat\n";
@@ -139,10 +147,11 @@ int main() {
     cin >> num_cases;
     for (uint i = 0; i < num_cases; ++i) {
         cout << "Case #" << i + 1 << ":" << endl;
-        TestCase().solve(true, true);
-        TestCase().solve(true, false);
-        TestCase().solve(false, true);
-        TestCase().solve(false, false);
+        TestCase tc = TestCase();
+        tc.solve(true, true);
+        tc.solve(true, false);
+        tc.solve(false, true);
+        tc.solve(false, false);
     }
 
     return EXIT_SUCCESS;
