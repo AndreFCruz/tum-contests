@@ -11,30 +11,30 @@ using namespace std;
  * From: https://cp-algorithms.com/graph/lca.html
  */
 struct LCA {
-    vector<long> height, euler, first, segtree;
+    vector<int> height, euler, first, segtree;
     vector<bool> visited;
-    long n;
+    int n;
 
-    LCA(const multimap<long, long>& adj, long root = 0) {
+    LCA(const multimap<int, int>& adj, int root = 0) {
         n = adj.size();
         height.resize(n);
         first.resize(n);
         euler.reserve(n * 2);
         visited.assign(n, false);
         dfs(adj, root);
-        long m = euler.size();
+        int m = euler.size();
         segtree.resize(m * 4);
         build(1, 0, m - 1);
     }
 
-    void dfs(const multimap<long, long>& adj, long node, long h = 0) {
+    void dfs(const multimap<int, int>& adj, int node, int h = 0) {
         visited[node] = true;
         height[node] = h;
         first[node] = euler.size();
         euler.push_back(node);
         for (auto it = adj.equal_range(node); it.first != it.second; ++it.first) {
             assert(it.first->first == node);
-            long to = it.first->second;
+            int to = it.first->second;
             if (!visited[to]) {
                 dfs(adj, to, h + 1);
                 euler.push_back(node);
@@ -42,34 +42,34 @@ struct LCA {
         }
     }
 
-    void build(long node, long b, long e) {
+    void build(int node, int b, int e) {
         if (b == e) {
             segtree[node] = euler[b];
         } else {
-            long mid = (b + e) / 2;
+            int mid = (b + e) / 2;
             build(node << 1, b, mid);
             build(node << 1 | 1, mid + 1, e);
-            long l = segtree[node << 1], r = segtree[node << 1 | 1];
+            int l = segtree[node << 1], r = segtree[node << 1 | 1];
             segtree[node] = (height[l] < height[r]) ? l : r;
         }
     }
 
-    long query(long node, long b, long e, long L, long R) {
+    int query(int node, int b, int e, int L, int R) {
         if (b > R || e < L)
             return -1;
         if (b >= L && e <= R)
             return segtree[node];
-        long mid = (b + e) >> 1;
+        int mid = (b + e) >> 1;
 
-        long left = query(node << 1, b, mid, L, R);
-        long right = query(node << 1 | 1, mid + 1, e, L, R);
+        int left = query(node << 1, b, mid, L, R);
+        int right = query(node << 1 | 1, mid + 1, e, L, R);
         if (left == -1) return right;
         if (right == -1) return left;
         return height[left] < height[right] ? left : right;
     }
 
-    long lca(long u, long v) {
-        long left = first[u], right = first[v];
+    int lca(int u, int v) {
+        int left = first[u], right = first[v];
         if (left > right)
             swap(left, right);
         return query(1, 0, euler.size() - 1, left, right);
@@ -78,43 +78,44 @@ struct LCA {
 
 
 class TestCase {
-    long n_nodes;
-    multimap<long, long> edges; // use unordered_multimap ?
-    vector<long> target_nodes;
+    int n_nodes;
+    multimap<int, int> edges; // use unordered_multimap ?
+    vector<int> target_nodes;
 
 public:
     explicit TestCase() {
         cin >> n_nodes;
 
-        long c, b;
-        for (long i = 0; i < n_nodes; ++i) {
+        int c, b;
+        for (int i = 0; i < n_nodes; ++i) {
             cin >> c;
-            for (long j = 0; j < c; ++j) {
+            for (int j = 0; j < c; ++j) {
                 cin >> b;
                 edges.insert(make_pair(i, b - 1));
                 edges.insert(make_pair(b - 1, i));
             }
         }
 
-        long v;
+        int v;
         cin >> v;
         target_nodes.resize(v);
-        for (long i = 0; i < v; ++i) {
+        for (int i = 0; i < v; ++i) {
             cin >> target_nodes[i];
             target_nodes[i] -= 1;
         }
     }
 
-    long solve() {
+    int solve() {
+        if (n_nodes == 1 or edges.size() == 0) return 0;
         LCA euler_lca(edges, 0);
 
-        long branches = 0;
-        long curr_node = 0;
+        int branches = 0;
+        int curr_node = 0;
         // LCA of each two consecutive nodes
-        for (long target : target_nodes) {
-            long lca = euler_lca.lca(curr_node, target);
-            long dist_curr_lca = euler_lca.height[curr_node]- euler_lca.height[lca];
-            long dist_lca_target = euler_lca.height[target] - euler_lca.height[lca];
+        for (int target : target_nodes) {
+            int lca = euler_lca.lca(curr_node, target);
+            int dist_curr_lca = euler_lca.height[curr_node]- euler_lca.height[lca];
+            int dist_lca_target = euler_lca.height[target] - euler_lca.height[lca];
             assert(dist_curr_lca >= 0 and dist_lca_target >= 0);
 
             branches += dist_curr_lca + dist_lca_target;
