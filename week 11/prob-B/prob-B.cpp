@@ -1,271 +1,162 @@
 #include <iostream>
 #include <vector>
-#include <cassert>
 #include <algorithm>
-#include <cmath>
 #include <cstdlib>
 #include <sstream>
-
-#define MAX 1000001
+#include <stdexcept>
+#include <string>
 
 using namespace std;
 
-// Segment Tree implementation
-// From: https://www.geeksforgeeks.org/lazy-propagation-in-segment-tree/
 
-// Ideally, we should not use global variables and large
-// constant-sized arrays, we have done it here for simplicity.
-int tree[MAX] = {0}; // To store segment tree
-int lazy[MAX] = {0}; // To store pending updates
+struct SegmentTreeNode {
+    int left, right, value, lazy;
+};
 
-/* si -> index of current node in segment tree 
-	ss and se -> Starting and ending indexes of elements for 
-				which current nodes stores sum. 
-	us and ue -> starting and ending indexes of update query 
-	diff -> which we need to add in the range us to ue */
-void updateRangeUtil(int si, int ss, int se, int us,
-                     int ue, int diff)
-{
-  // If lazy value is non-zero for current node of segment
-  // tree, then there are some pending updates. So we need
-  // to make sure that the pending updates are done before
-  // making new updates. Because this value may be used by
-  // parent after recursive calls (See last line of this
-  // function)
-  if (lazy[si] != 0)
-  {
-    // Make pending updates using value stored in lazy
-    // nodes
-    tree[si] += (se - ss + 1) * lazy[si];
 
-    // checking if it is not leaf node because if
-    // it is leaf node then we cannot go further
-    if (ss != se)
-    {
-      // We can postpone updating children we don't
-      // need their new values now.
-      // Since we are not yet updating children of si,
-      // we need to set lazy flags for the children
-      lazy[si * 2 + 1] += lazy[si];
-      lazy[si * 2 + 2] += lazy[si];
+class SegmentTreeLazy {
+private:
+    int size;
+    SegmentTreeNode* nodes;
+
+    static int buildSegmentTree(SegmentTreeLazy* t, int* a, int curr_idx, int left, int right) {
+        t->nodes[curr_idx].left = left;
+        t->nodes[curr_idx].right = right;
+        if (left == right) {
+            t->nodes[curr_idx].value = a[left];
+            return t->nodes[curr_idx].value;
+        }
+
+        int mid = (left + right) / 2;
+        t->nodes[curr_idx].value = \
+            buildSegmentTree(t, a, 2 * curr_idx + 1, left, mid) +
+                                   buildSegmentTree(t, a, 2 * curr_idx + 2, mid + 1, right);
+        return t->nodes[curr_idx].value;
     }
 
-    // Set the lazy value for current node as 0 as it
-    // has been updated
-    lazy[si] = 0;
-  }
-
-  // out of range
-  if (ss > se || ss > ue || se < us)
-    return;
-
-  // Current segment is fully in range
-  if (ss >= us && se <= ue)
-  {
-    // Add the difference to current node
-    tree[si] += (se - ss + 1) * diff;
-
-    // same logic for checking leaf node or not
-    if (ss != se)
-    {
-      // This is where we store values in lazy nodes,
-      // rather than updating the segment tree itelf
-      // Since we don't need these updated values now
-      // we postpone updates by storing values in lazy[]
-      lazy[si * 2 + 1] += diff;
-      lazy[si * 2 + 2] += diff;
-    }
-    return;
-  }
-
-  // If not completely in rang, but overlaps, recur for
-  // children,
-  int mid = (ss + se) / 2;
-  updateRangeUtil(si * 2 + 1, ss, mid, us, ue, diff);
-  updateRangeUtil(si * 2 + 2, mid + 1, se, us, ue, diff);
-
-  // And use the result of children calls to update this
-  // node
-  tree[si] = tree[si * 2 + 1] + tree[si * 2 + 2];
-}
-
-// Function to update a range of values in segment
-// tree
-/* us and eu -> starting and ending indexes of update query 
-	ue -> ending index of update query 
-	diff -> which we need to add in the range us to ue */
-void updateRange(int n, int us, int ue, int diff)
-{
-  updateRangeUtil(0, 0, n - 1, us, ue, diff);
-}
-
-/* A recursive function to get the sum of values in given 
-	range of the array. The following are parameters for 
-	this function. 
-	si --> Index of current node in the segment tree. 
-		Initially 0 is passed as root is always at' 
-		index 0 
-	ss & se --> Starting and ending indexes of the 
-				segment represented by current node, 
-				i.e., tree[si] 
-	qs & qe --> Starting and ending indexes of query 
-				range */
-int getSumUtil(int ss, int se, int qs, int qe, int si)
-{
-  // If lazy flag is set for current node of segment tree,
-  // then there are some pending updates. So we need to
-  // make sure that the pending updates are done before
-  // processing the sub sum query
-  if (lazy[si] != 0)
-  {
-    // Make pending updates to this node. Note that this
-    // node represents sum of elements in arr[ss..se] and
-    // all these elements must be increased by lazy[si]
-    tree[si] += (se - ss + 1) * lazy[si];
-
-    // checking if it is not leaf node because if
-    // it is leaf node then we cannot go further
-    if (ss != se)
-    {
-      // Since we are not yet updating children os si,
-      // we need to set lazy values for the children
-      lazy[si * 2 + 1] += lazy[si];
-      lazy[si * 2 + 2] += lazy[si];
+public:
+    SegmentTreeLazy(int* input_array, int size) : size(size) {
+        nodes = new SegmentTreeNode[size]();
+        SegmentTreeLazy::buildSegmentTree(this, input_array, 0, 0, size - 1);
     }
 
-    // unset the lazy value for current node as it has
-    // been updated
-    lazy[si] = 0;
-  }
+    ~SegmentTreeLazy() {
+        delete[] nodes;
+    }
 
-  // Out of range
-  if (ss > se || ss > qe || se < qs)
-    return 0;
+    int getSum(int left, int right) {
+        return getSum(0, left, right);
+    }
 
-  // At this point we are sure that pending lazy updates
-  // are done for current node. So we can return value
-  // (same as it was for query in our previous post)
+    int getSum(int curr_idx, int left, int right) {
+        if (left > nodes[curr_idx].right or right < nodes[curr_idx].left)
+            return 0;
+        else if (left <= nodes[curr_idx].left and nodes[curr_idx].right <= right)
+            return nodes[curr_idx].value;
 
-  // If this segment lies in range
-  if (ss >= qs && se <= qe)
-    return tree[si];
+        return \
+            getSum(2 * curr_idx + 1, left, right) + \
+            getSum(2 * curr_idx + 2, left, right);
+    }
 
-  // If a part of this segment overlaps with the given
-  // range
-  int mid = (ss + se) / 2;
-  return getSumUtil(ss, mid, qs, qe, 2 * si + 1) +
-         getSumUtil(mid + 1, se, qs, qe, 2 * si + 2);
-}
+    void add(int curr_idx, int update_idx, int value) {
+        if (update_idx < nodes[curr_idx].left or update_idx > nodes[curr_idx].right)
+            return;
+        nodes[curr_idx].value += value;
+        if (nodes[curr_idx].left != nodes[curr_idx].right) {
+            add(2 * curr_idx + 1, update_idx, value);
+            add(2 * curr_idx + 2, update_idx, value);
+        }
+    }
 
-// Return sum of elements in range from index qs (query
-// start) to qe (query end). It mainly uses getSumUtil()
-int getSum(int n, int qs, int qe)
-{
-  // Check for erroneous input values
-  if (qs < 0 || qe > n - 1 || qs > qe)
-  {
-    printf("Invalid Input");
-    return -1;
-  }
+    void rangeAdd(int left, int right, int value) {
+        rangeAdd(0, left, right, value);
+    }
 
-  return getSumUtil(0, n - 1, qs, qe, 0);
-}
+    void rangeAdd(int curr_idx, int left, int right, int value) {
+        propagate(curr_idx);
+        if (left > nodes[curr_idx].right or right < nodes[curr_idx].left)
+            return;
 
-// A recursive function that constructs Segment Tree for
-// array[ss..se]. si is index of current node in segment
-// tree st.
-void constructSTUtil(int arr[], int ss, int se, int si)
-{
-  // out of range as ss can never be greater than se
-  if (ss > se)
-    return;
+        if (left <= nodes[curr_idx].left and nodes[curr_idx].right <= right) {
+            nodes[curr_idx].lazy += value;
+            propagate(curr_idx);
+        }
+        else if (nodes[curr_idx].left != nodes[curr_idx].right) {
+            rangeAdd(2 * curr_idx + 1, left, right, value);
+            rangeAdd(2 * curr_idx + 2, left, right, value);
+            nodes[curr_idx].value = \
+                nodes[2 * curr_idx + 1].value + \
+                nodes[2 * curr_idx + 2].value;
+        }
+    }
 
-  // If there is one element in array, store it in
-  // current node of segment tree and return
-  if (ss == se)
-  {
-    tree[si] = arr[ss];
-    return;
-  }
+    void propagate(int curr_idx) {
+        nodes[curr_idx].value += (nodes[curr_idx].right - nodes[curr_idx].left + 1) * nodes[curr_idx].lazy;
+        if (nodes[curr_idx].left != nodes[curr_idx].right){
+            nodes[2 * curr_idx + 1].lazy += nodes[curr_idx].lazy;
+            nodes[2 * curr_idx + 2].lazy += nodes[curr_idx].lazy;
+        }
+        nodes[curr_idx].lazy = 0;
+    }
 
-  // If there are more than one elements, then recur
-  // for left and right subtrees and store the sum
-  // of values in this node
-  int mid = (ss + se) / 2;
-  constructSTUtil(arr, ss, mid, si * 2 + 1);
-  constructSTUtil(arr, mid + 1, se, si * 2 + 2);
+};
 
-  tree[si] = tree[si * 2 + 1] + tree[si * 2 + 2];
-}
 
-/* Function to construct segment tree from given array. 
-This function allocates memory for segment tree and 
-calls constructSTUtil() to fill the allocated memory */
-void constructST(int arr[], int n)
-{
-  // Fill the allocated memory st
-  constructSTUtil(arr, 0, n - 1, 0);
-}
 
 class TestCase
 {
-  int n_glasses;
-  int k_queries;
-  vector<string> queries;
+    int n_glasses;
+    int k_queries;
+    vector<string> queries;
 
 public:
-  explicit TestCase(istream &in)
-  {
-    in >> n_glasses >> k_queries;
-
-    string s;
-    getline(in, s); // clean dummy new line
-    for (int i = 0; i < k_queries; ++i)
+    explicit TestCase(istream &in)
     {
-      getline(in, s);
-      queries.push_back(s);
+        in >> n_glasses >> k_queries;
+
+        string s;
+        getline(in, s); // clean dummy new line
+        for (int i = 0; i < k_queries; ++i)
+        {
+            getline(in, s);
+            queries.push_back(s);
+        }
     }
 
-    n_glasses += 1; // to account for 1-indexing
-  }
+    int solve() {
 
-  int solve() {
-
-    int * arr = new int[n_glasses]();
-    constructST(arr, n_glasses);
-
-    int ans = 0;
-    for (string s : queries) {
-      if (s[0] == 'q') {
-        int target_glass = atoi(s.substr(2).c_str());
-        ans += getSum(n_glasses, target_glass, target_glass);
-      }
-      else if (s[0] == 'i')
-      {
-        stringstream str_stream(s.substr(2));
-        int l, r, v;
-        str_stream >> l >> r >> v;
-        updateRange(n_glasses, l, r, v);
-      }
-      else
-        throw invalid_argument("Invalid query argument");
+//        int ans = 0;
+//        for (string s : queries) {
+//            if (s[0] == 'q') {
+//                int target_glass = atoi(s.substr(2).c_str());
+//                ans += getSum(n_glasses, target_glass, target_glass);
+//            }
+//            else if (s[0] == 'i')
+//            {
+//                stringstream str_stream(s.substr(2));
+//                int l, r, v;
+//                str_stream >> l >> r >> v;
+//                updateRange(n_glasses, l, r, v);
+//            }
+//            else
+//                throw invalid_argument("Invalid query argument");
+//        }
+//
+//        return ans % 1000000007;
     }
-
-    delete[] arr;
-    return ans % 1000000007;
-  }
 };
 
 int main()
 {
-  std::ios_base::sync_with_stdio(false);
+    std::ios_base::sync_with_stdio(false);
 
-  uint num_cases;
-  cin >> num_cases;
-  for (uint i = 0; i < num_cases; ++i)
-  {
-    cout << "Case #" << i + 1 << ": " << TestCase(cin).solve() << endl;
-  }
+    uint num_cases;
+    cin >> num_cases;
+    for (uint i = 0; i < num_cases; ++i)
+    {
+        cout << "Case #" << i + 1 << ": " << TestCase(cin).solve() << endl;
+    }
 
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

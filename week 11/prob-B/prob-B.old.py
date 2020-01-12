@@ -7,7 +7,7 @@ import sys
 
 # Segment Tree implementation
 # From: https://www.geeksforgeeks.org/lazy-propagation-in-segment-tree-set-2/
-MAX = 10 ** 6 + 1
+MAX = 10 ** 7 + 1
 tree = [0] * MAX  # To store segment tree
 lazy = [0] * MAX  # To store pending updates
 
