@@ -5,19 +5,22 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
 
 struct SegmentTreeNode {
-    int left, right, value, lazy;
+    int left = 0, right = 0, value = 0, lazy = 0;
 };
 
 
 class SegmentTreeLazy {
 private:
+    int height;
     int size;
     SegmentTreeNode* nodes;
+//    vector<SegmentTreeNode> nodes;
 
     static int buildSegmentTree(SegmentTreeLazy* t, int* a, int curr_idx, int left, int right) {
         t->nodes[curr_idx].left = left;
@@ -29,19 +32,22 @@ private:
 
         int mid = (left + right) / 2;
         t->nodes[curr_idx].value = \
-            buildSegmentTree(t, a, 2 * curr_idx + 1, left, mid) +
-                                   buildSegmentTree(t, a, 2 * curr_idx + 2, mid + 1, right);
+            buildSegmentTree(t, a, 2 * curr_idx + 1, left, mid) + \
+            buildSegmentTree(t, a, 2 * curr_idx + 2, mid + 1, right);
         return t->nodes[curr_idx].value;
     }
 
 public:
-    SegmentTreeLazy(int* input_array, int size) : size(size) {
+    SegmentTreeLazy(int* input_array, int array_size) {
+        height = ceil(log2(array_size));
+        size = pow(2, height + 1);
         nodes = new SegmentTreeNode[size]();
-        SegmentTreeLazy::buildSegmentTree(this, input_array, 0, 0, size - 1);
+//        nodes = vector<SegmentTreeNode>(size);
+        SegmentTreeLazy::buildSegmentTree(this, input_array, 0, 0, array_size - 1);
     }
 
     ~SegmentTreeLazy() {
-        delete[] nodes;
+//        delete[] nodes;
     }
 
     int getSum(int left, int right) {
@@ -51,7 +57,9 @@ public:
     int getSum(int curr_idx, int left, int right) {
         if (left > nodes[curr_idx].right or right < nodes[curr_idx].left)
             return 0;
-        else if (left <= nodes[curr_idx].left and nodes[curr_idx].right <= right)
+
+        propagate(curr_idx);
+        if (left <= nodes[curr_idx].left and nodes[curr_idx].right <= right)
             return nodes[curr_idx].value;
 
         return \
@@ -115,35 +123,42 @@ public:
     {
         in >> n_glasses >> k_queries;
 
-        string s;
-        getline(in, s); // clean dummy new line
-        for (int i = 0; i < k_queries; ++i)
-        {
-            getline(in, s);
-            queries.push_back(s);
-        }
+//        string s;
+//        getline(in, s); // clean dummy new line
+//        for (int i = 0; i < k_queries; ++i)
+//        {
+//            getline(in, s);
+//            queries.push_back(s);
+//        }
     }
 
     int solve() {
+        int * arr = new int[n_glasses]();
+        SegmentTreeLazy st(arr, n_glasses);
 
-//        int ans = 0;
-//        for (string s : queries) {
-//            if (s[0] == 'q') {
-//                int target_glass = atoi(s.substr(2).c_str());
-//                ans += getSum(n_glasses, target_glass, target_glass);
-//            }
-//            else if (s[0] == 'i')
-//            {
-//                stringstream str_stream(s.substr(2));
-//                int l, r, v;
-//                str_stream >> l >> r >> v;
-//                updateRange(n_glasses, l, r, v);
-//            }
-//            else
-//                throw invalid_argument("Invalid query argument");
-//        }
-//
-//        return ans % 1000000007;
+        int ans = 0;
+        for (int k = 0; k < k_queries; ++k) {
+            char query_type;
+            cin >> query_type;
+
+            if (query_type == 'q') {
+                int target_glass;
+                cin >> target_glass;
+                ans += st.getSum(target_glass-1, target_glass-1);
+                ans %= 1000000007;
+            }
+            else if (query_type == 'i')
+            {
+                int l, r, v;
+                cin >> l >> r >> v;
+                st.rangeAdd(l-1, r-1, v);
+            }
+            else
+                throw invalid_argument("Invalid query argument");
+        }
+
+        delete[] arr;
+        return ans;
     }
 };
 

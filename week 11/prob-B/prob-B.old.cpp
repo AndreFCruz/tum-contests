@@ -248,10 +248,12 @@ public:
       }
       else
         throw invalid_argument("Invalid query argument");
+
+      ans %= 1000000007;
     }
 
     delete[] arr;
-    return ans % 1000000007;
+    return ans;
   }
 };
 
