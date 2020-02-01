@@ -13,7 +13,6 @@ def solve_test_case():
   pigs = list(range(1, n + 1))
   curr_ptr = 0
   while len(pigs) > 1:
-    # import ipdb; ipdb.set_trace()
     curr_ptr = (curr_ptr + k - 1) % len(pigs)
     pigs.pop(curr_ptr)
 
